@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  api-users:
+    container_name: tracing-api-users
+    build: ./src/Services/Users.API
+    ports:
+      - "8001:80"
+    depends_on:
+      - db-sqlserver
+
+  db-sqlserver:
+    container_name: tracing-db-sqlserver
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    ports:
+      - "1440:1433"
+    environment:
+      SA_PASSWORD: "myP@ssw0rD"
+      ACCEPT_EULA: "Y"
