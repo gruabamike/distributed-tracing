@@ -1,28 +1,27 @@
-﻿using DistributedTracingDotNet.Services.Users.API.Models;
+﻿using DistributedTracingDotNet.Services.Users.API.Data;
+using DistributedTracingDotNet.Services.Users.API.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace DistributedTracingDotNet.Services.Users.API.Services;
 
 public class UserService : IUserService
 {
-    private static List<User> users = new List<User>
+    private readonly DataContext context;
+
+    public UserService(DataContext context)
     {
-        new User(1, "Michael", "Gruber"),
-        new User(2, "Lukas", "Seyr")
-    };
+        this.context = context;
+    }
 
     public async Task<List<User>> AddUserAsync(User user)
     {
-        users.Add(user);
-        return users;
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        return await context.Users.ToListAsync();
     }
 
-    public async Task<User> GetAsync(int id)
-    {
-        return users.FirstOrDefault(x => x.Id == id);
-    }
+    public async Task<User> GetAsync(int id) => await context.Users.FindAsync(id);
 
-    public async Task<IList<User>> GetAllAsync()
-    {
-        return users;
-    }
+    public async Task<IList<User>> GetAllAsync() => await context.Users.ToListAsync();
 }
