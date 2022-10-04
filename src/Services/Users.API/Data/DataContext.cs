@@ -1,4 +1,4 @@
-﻿using DistributedTracingDotNet.Shared.Users.Contract;
+﻿using DistributedTracingDotNet.Services.Users.API.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace DistributedTracingDotNet.Services.Users.API.Data;

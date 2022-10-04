@@ -1,4 +1,4 @@
-﻿using DistributedTracingDotNet.Shared.Users.Contract;
+﻿using DistributedTracingDotNet.Services.Users.API.Models;
 
 namespace DistributedTracingDotNet.Services.Users.API.Services;
 

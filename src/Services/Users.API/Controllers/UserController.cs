@@ -1,5 +1,5 @@
+using DistributedTracingDotNet.Services.Users.API.Models;
 using DistributedTracingDotNet.Services.Users.API.Services;
-using DistributedTracingDotNet.Shared.Users.Contract;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DistributedTracingDotNet.Services.Users.API.Controllers;
