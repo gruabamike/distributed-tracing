@@ -1,6 +1,8 @@
 using DistributedTracingDotNet.Services.Users.API.Data;
 using DistributedTracingDotNet.Services.Users.API.Services;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.Reflection;
@@ -12,8 +14,28 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddOpenTelemetryTracing(config => config
-    .AddConsoleExporter()
+
+builder.Host.ConfigureLogging(logging => logging.ClearProviders());
+builder.Logging.AddOpenTelemetry(options =>
+{
+    options.IncludeFormattedMessage = true;
+    options.IncludeScopes = true;
+    options.ParseStateValues = true;
+    options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName, serviceVersion: serviceVersion));
+    options.AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf);
+});
+
+builder.Services.AddOpenTelemetryMetrics(builder => builder
+    .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
+    .SetResourceBuilder(
+        ResourceBuilder.CreateDefault()
+            .AddService(serviceName, serviceVersion: serviceVersion))
+    .AddHttpClientInstrumentation()
+    .AddAspNetCoreInstrumentation()
+);
+
+builder.Services.AddOpenTelemetryTracing(builder => builder
+    .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
     .AddSource(serviceName)
     .SetResourceBuilder(
         ResourceBuilder.CreateDefault()
