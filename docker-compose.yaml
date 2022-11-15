@@ -10,6 +10,14 @@ services:
       - otel-collector
       - db-sqlserver
 
+  active-mq:
+    container_name: tracing-active-mq
+    image: "rmohr/activemq:latest"
+    ports:
+      - 61616:61616 # JMS
+      - 5672:5672   # AMQP
+      - 8161:8161   # UI
+
   db-sqlserver:
     container_name: tracing-db-sqlserver
     image: "mcr.microsoft.com/mssql/server:2022-latest"
