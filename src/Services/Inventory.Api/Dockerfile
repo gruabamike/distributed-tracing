@@ -9,4 +9,4 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 COPY --from=build /app ./
-ENTRYPOINT [ "dotnet", "Users.Api.dll" ]
+ENTRYPOINT [ "dotnet", "Inventory.Api.dll" ]

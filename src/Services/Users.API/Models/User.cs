@@ -1,4 +1,4 @@
-﻿namespace DistributedTracingDotNet.Services.Users.API.Models;
+﻿namespace DistributedTracingDotNet.Services.Users.Api.Models;
 
 public class User
 {

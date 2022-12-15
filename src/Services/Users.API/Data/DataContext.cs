@@ -1,7 +1,7 @@
-﻿using DistributedTracingDotNet.Services.Users.API.Models;
+﻿using DistributedTracingDotNet.Services.Users.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace DistributedTracingDotNet.Services.Users.API.Data;
+namespace DistributedTracingDotNet.Services.Users.Api.Data;
 
 public class DataContext : DbContext
 {

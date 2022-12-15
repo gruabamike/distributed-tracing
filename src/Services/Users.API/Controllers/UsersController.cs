@@ -1,16 +1,16 @@
-using DistributedTracingDotNet.Services.Users.API.Models;
-using DistributedTracingDotNet.Services.Users.API.Services;
+using DistributedTracingDotNet.Services.Users.Api.Models;
+using DistributedTracingDotNet.Services.Users.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DistributedTracingDotNet.Services.Users.API.Controllers;
+namespace DistributedTracingDotNet.Services.Users.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class UserController : ControllerBase
+[Route("[controller]")]
+public class UsersController : ControllerBase
 {
     private readonly IUserService userService;
 
-    public UserController(IUserService userService)
+    public UsersController(IUserService userService)
     {
         this.userService = userService;
     }

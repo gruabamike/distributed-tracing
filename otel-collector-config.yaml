@@ -7,14 +7,19 @@ receivers:
       http:
       grpc:
 
+processors:
+  batch:
+
 # configure exporters
 exporters:
   jaeger:
-    endpoint: localhost:14250
+    endpoint: jaeger:14250
     tls:
       insecure: true
   zipkin:
-    endpoint: "http://localhost:9411/api/v2/spans"
+    endpoint: "http://zipkin:9411/api/v2/spans"
+    tls:
+      insecure: true
     format: proto
   prometheus:
     endpoint: :9090
@@ -22,9 +27,6 @@ exporters:
     #  label1: value1
   logging:
     loglevel: debug
-
-processors:
-  batch:
 
 extensions:
   health_check:

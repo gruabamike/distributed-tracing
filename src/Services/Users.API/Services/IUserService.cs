@@ -1,6 +1,6 @@
-﻿using DistributedTracingDotNet.Services.Users.API.Models;
+﻿using DistributedTracingDotNet.Services.Users.Api.Models;
 
-namespace DistributedTracingDotNet.Services.Users.API.Services;
+namespace DistributedTracingDotNet.Services.Users.Api.Services;
 
 public interface IUserService
 {

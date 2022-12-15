@@ -1,19 +1,17 @@
-using DistributedTracingDotNet.Services.Users.Api.Data;
-using DistributedTracingDotNet.Services.Users.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using OrderService.Api.Data;
+using OrderService.Api.Services;
 using System.Reflection;
 
-var serviceName = $"{nameof(DistributedTracingDotNet)}.Users.Api";
+var serviceName = "OrderService.Api";// $"{nameof(DistributedTracingDotNet)}.Users.API";
 var serviceVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 
 
 builder.Host.ConfigureLogging(logging => logging.ClearProviders());
@@ -33,48 +31,26 @@ builder.Services.AddOpenTelemetry()
             ResourceBuilder.CreateDefault()
                 .AddService(serviceName, serviceVersion: serviceVersion))
         .AddHttpClientInstrumentation()
-        .AddAspNetCoreInstrumentation())
+        .AddAspNetCoreInstrumentation()
+    )
     .WithTracing(builder => builder
         .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
         .AddSource(serviceName)
         .SetResourceBuilder(
             ResourceBuilder.CreateDefault()
                 .AddService(serviceName, serviceVersion: serviceVersion))
-        .AddHttpClientInstrumentation((options) =>
-        {
-            options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) => activity.SetTag("requestVersion", httpRequestMessage.Version);
-            options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) => activity.SetTag("requestVersion", httpResponseMessage.Version);
-            options.EnrichWithException = (activity, exception) => activity.SetTag("stackTrace", exception.StackTrace);
-        })
-        .AddAspNetCoreInstrumentation(options =>
-        {
-            options.EnrichWithHttpRequest = (activity, httpRequest) =>
-            {
-                activity.SetTag("requestProtocol", httpRequest.Protocol);
-            };
-            options.EnrichWithHttpResponse = (activity, httpResponse) =>
-            {
-                activity.SetTag("responseLength", httpResponse.ContentLength);
-            };
-            options.EnrichWithException = (activity, exception) =>
-            {
-                activity.SetTag("exceptionType", exception.GetType().ToString());
-            };
-        })
-        .AddSqlClientInstrumentation(options =>
-        {
-            options.SetDbStatementForText = true;
-            options.SetDbStatementForStoredProcedure = true;
-            options.EnableConnectionLevelAttributes = true;
-        }
-        ))
+        .AddHttpClientInstrumentation()
+        .AddAspNetCoreInstrumentation()
+        .AddSqlClientInstrumentation()
+    )
     .StartWithHost();
 
+builder.Services.AddScoped<IOrderService, OrderService.Api.Services.OrderService>();
+
+builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddScoped<IUserService, UserService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

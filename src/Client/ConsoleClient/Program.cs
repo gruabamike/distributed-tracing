@@ -1,5 +1,6 @@
 ﻿using Apache.NMS;
 using Apache.NMS.ActiveMQ;
+using MySql.Data.MySqlClient;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
 using OpenTelemetry.Resources;
@@ -33,6 +34,8 @@ internal class Program
 
         await ProduceAsync();
         await ConsumeAsync();
+
+        var con = new MySqlConnection();
     }
 
     private async static Task ProduceAsync()

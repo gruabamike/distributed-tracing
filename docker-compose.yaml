@@ -3,12 +3,39 @@ version: '3.9'
 services:
   api-users:
     container_name: tracing-api-users
-    build: ./src/Services/Users.API
+    build: ./src/Services/Users.Api
     ports:
-      - "8001:80"
+      - "8010:80"
+      - "8011:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings:DefaultConnection=
     depends_on:
       - otel-collector
       - db-sqlserver
+
+  api-orders:
+    container_name: tracing-api-orders
+    build: ./src/Services/Orders.Api
+    ports:
+      - "8020:80"
+      - "8021:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - otel-collector
+      - db-sqlserver
+
+  api-inventory:
+    container_name: tracing-api-inventory
+    build: ./src/Services/Inventory.Api
+    ports:
+      - "8030:80"
+      - "8031:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - otel-collector
 
   active-mq:
     container_name: tracing-active-mq
@@ -51,9 +78,9 @@ services:
     container_name: tracing-jaeger
     image: jaegertracing/all-in-one:latest
     ports:
+      - "14250:14250"
+      - "14268:14268"
       - "16686:16686"
-      - "14268"
-      - "14250"
 
   zipkin:
     container_name: tracing-zipkin

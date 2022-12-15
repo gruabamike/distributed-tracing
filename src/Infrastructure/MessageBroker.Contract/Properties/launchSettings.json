@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "MessageBroker.Contract": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:53531;http://localhost:53532"
+    }
+  }
+}

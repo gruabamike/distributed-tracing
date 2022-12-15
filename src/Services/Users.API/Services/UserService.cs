@@ -1,8 +1,8 @@
-﻿using DistributedTracingDotNet.Services.Users.API.Data;
-using DistributedTracingDotNet.Services.Users.API.Models;
+﻿using DistributedTracingDotNet.Services.Users.Api.Data;
+using DistributedTracingDotNet.Services.Users.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace DistributedTracingDotNet.Services.Users.API.Services;
+namespace DistributedTracingDotNet.Services.Users.Api.Services;
 
 public class UserService : IUserService
 {
