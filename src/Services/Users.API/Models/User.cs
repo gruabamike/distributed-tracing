@@ -1,8 +1,3 @@
 ﻿namespace DistributedTracingDotNet.Services.Users.Api.Models;
 
-public class User
-{
-    public int Id { get; set; }
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-}
+public record User(Guid Id, string FirstName, string LastName);

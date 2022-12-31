@@ -1,3 +1,5 @@
+using AutoMapper;
+using DistributedTracingDotNet.Services.Users.Api.Dtos;
 using DistributedTracingDotNet.Services.Users.Api.Models;
 using DistributedTracingDotNet.Services.Users.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -8,37 +10,57 @@ namespace DistributedTracingDotNet.Services.Users.Api.Controllers;
 [Route("[controller]")]
 public class UsersController : ControllerBase
 {
+    private readonly ILogger<UsersController> logger;
+    private readonly IMapper mapper;
     private readonly IUserService userService;
 
-    public UsersController(IUserService userService)
+    public UsersController(
+        ILogger<UsersController> logger,
+        IMapper mapper,
+        IUserService userService)
     {
-        this.userService = userService;
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this.mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
     }
 
-    [HttpGet()]
-    public async Task<ActionResult<List<User>>> Get()
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
     {
-        return Ok(await userService.GetAllAsync());
+        return Ok(mapper.Map<IEnumerable<UserDto>>(await userService.GetAllAsync()));
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<User>> Get(int id) {
-        var user = await userService.GetAsync(id);
+    [HttpGet("{userId}")]
+    public async Task<ActionResult<UserDto>> GetUser(Guid userId) {
+        var user = await userService.GetAsync(userId);
         if (user is null)
         {
-            return BadRequestUserNotFound(id);
+            return NotFound();
         }
-        return Ok(await userService.GetAsync(id));
+
+        return Ok(mapper.Map<UserDto>(await userService.GetAsync(userId)));
     }
 
     [HttpPost]
-    public async Task<ActionResult<List<User>>> AddUser(User newUser)
+    public async Task<ActionResult> AddUser(UserForCreationDto newUser)
     {
-        return Ok(await userService.AddUserAsync(newUser));
+        var user = mapper.Map<User>(newUser);
+
+        user = await userService.AddUserAsync(user);
+        if (user is null)
+        {
+            return BadRequest();
+        }
+
+        return CreatedAtAction(
+            nameof(GetUser),
+            new { userId = user.Id },
+            mapper.Map<UserDto>(user));
     }
 
+    /*
     [HttpPut]
-    public async Task<ActionResult<List<User>>> UpdateUser(User updatedUser)
+    public async Task<ActionResult> UpdateUser(User updatedUser)
     {
         var user = await userService.GetAsync(updatedUser.Id);
         if (user is null)
@@ -51,9 +73,5 @@ public class UsersController : ControllerBase
 
         return Ok();
     }
-
-    private BadRequestObjectResult BadRequestUserNotFound(int userId)
-    {
-        return BadRequest($"User with Id '{userId}' not found!");
-    }
+    */
 }

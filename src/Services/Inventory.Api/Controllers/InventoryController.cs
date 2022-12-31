@@ -1,23 +1,36 @@
-﻿using Inventory.Api.Dtos;
+﻿using AutoMapper;
+using Inventory.Api.Dtos;
 using Inventory.Api.Services;
 using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Inventory.Api.Controllers;
 [Route("[controller]")]
 [ApiController]
 public class InventoryController : ControllerBase
 {
+    private readonly ILogger<InventoryController> logger;
+    private readonly IMapper mapper;
     private readonly IInventoryService inventoryService;
-    public InventoryController(IInventoryService inventoryService)
+
+    public InventoryController(
+        ILogger<InventoryController> logger,
+        IMapper mapper,
+        IInventoryService inventoryService)
     {
-        this.inventoryService = inventoryService;
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this.mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        this.inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
     }
 
     [HttpGet("{productId}")]
     public async Task<ActionResult<InventoryDto>> Get(Guid productId)
     {
-        return Ok(await inventoryService.GetByProductId(productId));
+        var stock = await inventoryService.GetByProductId(productId);
+        if (stock is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(mapper.Map<InventoryDto>(stock));
     }
 }

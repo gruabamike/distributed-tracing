@@ -1,3 +1,5 @@
+using MessageBroker.ActiveMQ.ManualInstrumentation;
+using MessageBroker.Contract;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
@@ -8,68 +10,75 @@ using OrderService.Api.Data;
 using OrderService.Api.Services;
 using System.Reflection;
 
-var serviceName = "OrderService.Api";// $"{nameof(DistributedTracingDotNet)}.Users.API";
-var serviceVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
+namespace DistributedTracingDotNet.Services.Orders.Api;
 
-var builder = WebApplication.CreateBuilder(args);
-
-
-builder.Host.ConfigureLogging(logging => logging.ClearProviders());
-builder.Logging.AddOpenTelemetry(options =>
+internal class Program
 {
-    options.IncludeFormattedMessage = true;
-    options.IncludeScopes = true;
-    options.ParseStateValues = true;
-    options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName, serviceVersion: serviceVersion));
-    options.AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf);
-});
+    private static readonly AssemblyName AssemblyName = typeof(Program).Assembly.GetName();
+    private static readonly string ServiceName = AssemblyName.Name!;
+    private static readonly string ServiceVersion = AssemblyName?.Version?.ToString() ?? "1.0.0";
 
-builder.Services.AddOpenTelemetry()
-    .WithMetrics(builder => builder
-        .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
-        .SetResourceBuilder(
-            ResourceBuilder.CreateDefault()
-                .AddService(serviceName, serviceVersion: serviceVersion))
-        .AddHttpClientInstrumentation()
-        .AddAspNetCoreInstrumentation()
-    )
-    .WithTracing(builder => builder
-        .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
-        .AddSource(serviceName)
-        .SetResourceBuilder(
-            ResourceBuilder.CreateDefault()
-                .AddService(serviceName, serviceVersion: serviceVersion))
-        .AddHttpClientInstrumentation()
-        .AddAspNetCoreInstrumentation()
-        .AddSqlClientInstrumentation()
-    )
-    .StartWithHost();
+    private static void Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<IOrderService, OrderService.Api.Services.OrderService>();
+        builder.Host.ConfigureLogging(logging => logging.ClearProviders());
 
-builder.Services.AddHttpClient();
-builder.Services.AddControllers();
-builder.Services.AddDbContext<DataContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        builder.Logging.AddOpenTelemetry(options =>
+        {
+            options.IncludeFormattedMessage = true;
+            options.IncludeScopes = true;
+            options.ParseStateValues = true;
+            options.SetResourceBuilder(GetResourceBuilder());
+            options.AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf);
+        });
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+        builder.Services.AddOpenTelemetry()
+            .WithMetrics(builder => builder
+                .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
+                .SetResourceBuilder(GetResourceBuilder())
+                .AddHttpClientInstrumentation()
+                .AddAspNetCoreInstrumentation()
+            )
+            .WithTracing(builder => builder
+                .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
+                .AddSource(ActiveMQSourceInfoProvider.ActivitySourceName)
+                .SetResourceBuilder(GetResourceBuilder())
+                .AddHttpClientInstrumentation()
+                .AddAspNetCoreInstrumentation()
+                .AddSqlClientInstrumentation()
+            )
+            .StartWithHost();
 
-builder.Services.AddRouting(option => option.LowercaseUrls = true);
-var app = builder.Build();
+        builder.Services.AddScoped<IOrderService, OrderService.Api.Services.OrderService>();
+        builder.Services.AddScoped<IMessageSender, MessageSender>((_) => new MessageSender(new Uri("activemq:tcp://localhost:61616"), "OrderProcessing"));
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+        builder.Services.AddHttpClient();
+        builder.Services.AddControllers();
+        builder.Services.AddDbContext<DataContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
+
+        builder.Services.AddRouting(option => option.LowercaseUrls = true);
+        var app = builder.Build();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        app.Run();
+    }
+
+    private static ResourceBuilder GetResourceBuilder()
+        => ResourceBuilder.CreateDefault().AddService(ServiceName, ServiceVersion);
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();

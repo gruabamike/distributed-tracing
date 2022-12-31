@@ -11,16 +11,16 @@ using System.Text;
 
 namespace ConsoleClient;
 
-internal class Program
+public class ActiveMQInstrumentationBroker
 {
-    private const string ServiceName = $"{nameof(Program)}";
+    private const string ServiceName = $"{nameof(ActiveMQInstrumentationBroker)}";
     private const string ServiceVersion = "1.0.0";
 
     private static readonly TextMapPropagator Propagator = Propagators.DefaultTextMapPropagator;
     private static readonly ActivitySource ActivitySource = new ActivitySource(ServiceName, ServiceVersion);
     private static readonly Uri MessageBrokerConnectionUri = new Uri("activemq:tcp://localhost:61616");
 
-    private const string QueueName = "TestQueue";
+    private const string QueueName = "OrderProcessor";
 
     private static async Task Main(string[] args)
     {
@@ -34,13 +34,11 @@ internal class Program
 
         await ProduceAsync();
         await ConsumeAsync();
-
-        var con = new MySqlConnection();
     }
 
-    private async static Task ProduceAsync()
+    public async static Task ProduceAsync()
     {
-        var activityName = $"{QueueName} send";
+        var activityName = "Publish";
         using var activity = ActivitySource.StartActivity(activityName, ActivityKind.Producer);
 
         ActivityContext contextToInject = default;
@@ -77,7 +75,7 @@ internal class Program
         messageProperties.SetString(key, value);
     }
 
-    private async static Task ConsumeAsync()
+    public async static Task ConsumeAsync()
     {
         IConnectionFactory connectionFactory = new ConnectionFactory(MessageBrokerConnectionUri);
         using IConnection connection = await connectionFactory.CreateConnectionAsync();
@@ -86,20 +84,20 @@ internal class Program
         using IDestination destination = await session.GetQueueAsync(QueueName);
 
         using IMessageConsumer consumer = await session.CreateConsumerAsync(destination);
-        IMessage message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(1000));
+        IMessage message = await consumer.ReceiveAsync(TimeSpan.FromMinutes(3));
         var textMessage = message as ITextMessage;
 
         if (textMessage is not null)
         {
             Console.WriteLine($">> msg consumed: {textMessage.Text}");
+
+            var parentContext = Propagator.Extract(default, message.Properties, ExtractTraceContext);
+            Baggage.Current = parentContext.Baggage;
+
+            var activityName = "Consume";
+            using var activity = ActivitySource.StartActivity(activityName, ActivityKind.Consumer, parentContext.ActivityContext);
+            AddMessageBrokerTags(activity);
         }
-
-        var parentContext = Propagator.Extract(default, message.Properties, ExtractTraceContext);
-        Baggage.Current = parentContext.Baggage;
-
-        var activityName = $"{QueueName} receive";
-        using var activity = ActivitySource.StartActivity(activityName, ActivityKind.Consumer, parentContext.ActivityContext);
-        AddMessageBrokerTags(activity);
     }
 
     private static IEnumerable<string> ExtractTraceContext(IPrimitiveMap messageProperties, string key)

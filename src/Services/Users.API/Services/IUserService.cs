@@ -4,9 +4,9 @@ namespace DistributedTracingDotNet.Services.Users.Api.Services;
 
 public interface IUserService
 {
-    Task<IList<User>> GetAllAsync();
+    Task<IEnumerable<User>> GetAllAsync();
 
-    Task<User> GetAsync(int id);
+    Task<User?> GetAsync(Guid id);
 
-    Task<List<User>> AddUserAsync(User user);
+    Task<User?> AddUserAsync(User user);
 }

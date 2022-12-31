@@ -1,26 +1,69 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using OrderService.Api.Dtos;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using AutoMapper;
+using ConsoleClient;
+using MessageBroker.Contract;
+using Microsoft.AspNetCore.Mvc;
+using Orders.Api.Commands;
+using Orders.Api.Dtos;
+using OrderService.Api.Services;
 
 namespace OrderService.Api.Controllers;
 [Route("[controller]")]
 [ApiController]
 public class OrdersController : ControllerBase
 {
+    private readonly ILogger<OrdersController> logger;
+    private readonly IMapper mapper;
+    private readonly IOrderService orderService;
     private readonly IHttpClientFactory httpClientFactory;
+    private readonly IMessageSender messagePublisher;
+
 
     public OrdersController(
         ILogger<OrdersController> logger,
-        IHttpClientFactory httpClientFactory)
+        IMapper mapper,
+        IOrderService orderService,
+        IHttpClientFactory httpClientFactory,
+        IMessageSender messagePublisher)
     {
+        this.logger = logger;
+        this.mapper = mapper;
+        this.orderService = orderService;
         this.httpClientFactory = httpClientFactory;
+        this.messagePublisher = messagePublisher;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrders()
+        => Ok(mapper.Map<IEnumerable<OrderDto>>(await orderService.GetOrdersAsync()));
+
+    [HttpGet("{orderId}")]
+    public async Task<ActionResult<OrderDto>> GetOrder(Guid orderId)
+    {
+        var order = await orderService.GetOrderAsync(orderId);
+        if (order is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(mapper.Map<OrderDto>(order));
     }
 
     [HttpPost]
-    public async Task<ActionResult> Post([FromBody] CreateOrderDto createOrderDto)
+    public async Task<ActionResult> AddOrder(OrderForCreationDto createOrderDto)
     {
+        var createOrderCommand = mapper.Map<CreateOrderCommand>(createOrderDto);
+        var order = await orderService.AddOrderAsync(createOrderCommand);
 
+        if (order is null)
+        {
+            return BadRequest();
+        }
+
+        return CreatedAtAction(
+            nameof(GetOrder),
+            new { orderId = order.Id },
+            mapper.Map<OrderDto>(order));
+        /*
         var httpRequestMessage = new HttpRequestMessage(
             HttpMethod.Get,
             "http://localhost:7030/inventory/" + Guid.NewGuid());
@@ -36,13 +79,14 @@ public class OrdersController : ControllerBase
 
         httpRequestMessage = new HttpRequestMessage(
             HttpMethod.Get,
-            "http://localhost:7010/user/");
+            "http://localhost:7010/users/");
 
         httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
 
         if (httpResponseMessage.IsSuccessStatusCode)
         {
-            // TODO: add order to ActiveMQ
+            await ActiveMQInstrumentationBroker.ProduceAsync();
+            //await messagePublisher.Publish(new TextMessage(Guid.NewGuid().ToString()));
         }
 
 
@@ -52,5 +96,6 @@ public class OrdersController : ControllerBase
         // - http request to inventory service
         // - IO -> save order history entry; place OrderProcessing Message to ActiveMQ; IO result
         // - NIO -> NIO result
+        */
     }
 }

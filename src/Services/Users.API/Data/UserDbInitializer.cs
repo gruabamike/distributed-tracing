@@ -15,16 +15,16 @@ namespace DistributedTracingDotNet.Services.Users.Api.Data
         public void Seed()
         {
             modelBuilder.Entity<User>().HasData(
-                new User { Id = 1, FirstName = "Khadeeja", LastName = "Glenn" },
-                new User { Id = 2, FirstName = "Monty", LastName = "Vang" },
-                new User { Id = 3, FirstName = "Roseanne", LastName = "Hodges" },
-                new User { Id = 4, FirstName = "Antoine", LastName = "Bellamy" },
-                new User { Id = 5, FirstName = "Felicia", LastName = "Dowling" },
-                new User { Id = 6, FirstName = "Sidrah", LastName = "Humphries" },
-                new User { Id = 7, FirstName = "Carly", LastName = "Haas" },
-                new User { Id = 8, FirstName = "Isadora", LastName = "Greig" },
-                new User { Id = 9, FirstName = "Cadi", LastName = "Bull" },
-                new User { Id = 10, FirstName = "Jaxon", LastName = "Gentry" }
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000001"), "Khadeeja", "Glenn"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000002"), "Monty", "Vang"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000003"), "Roseanne", "Hodges"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000004"), "Antoine", "Bellamy"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000005"), "Felicia", "Dowling"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000006"), "Sidrah", "Humphries"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000007"), "Carly", "Haas"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000008"), "Isadora", "Greig"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000009"), "Cadi", "Bull"),
+                new User(Guid.Parse("00000000-0000-0000-0000-000000000010"), "Jaxon", "Gentry")
             );
         }
     }

@@ -1,8 +1,13 @@
-﻿using OrderService.Api.Models;
+﻿using Orders.Api.Commands;
+using OrderService.Api.Models;
 
 namespace OrderService.Api.Services;
 
 public interface IOrderService
 {
-    Task<List<Order>> AddOrderAsync(Order order);
+    Task<Order?> GetOrderAsync(Guid orderId);
+
+    Task<IEnumerable<Order>> GetOrdersAsync();
+
+    Task<Order?> AddOrderAsync(CreateOrderCommand createOrderCommand);
 }

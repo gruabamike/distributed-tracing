@@ -15,7 +15,7 @@ internal class OrderDbInitializer
     public void Seed()
     {
         modelBuilder.Entity<Order>().HasData(
-            new Order(Guid.Parse("o9fd2671-6386-41da-bb51-f04d3e772f91"))
+            new Order(Guid.Parse("00000000-0000-0000-0000-000000000001"))
         );
     }
 }
