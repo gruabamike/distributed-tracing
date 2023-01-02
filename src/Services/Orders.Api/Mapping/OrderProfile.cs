@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Orders.Api.Commands;
 using Orders.Api.Dtos;
-using OrderService.Api.Models;
+using Orders.Api.Models;
 
 namespace Orders.Api.Mapping;
 

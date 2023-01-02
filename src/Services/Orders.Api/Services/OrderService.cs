@@ -1,12 +1,10 @@
-﻿using ConsoleClient;
-using MessageBroker.Contract;
+﻿using MessageBroker.Contract;
 using Microsoft.EntityFrameworkCore;
 using Orders.Api.Commands;
-using OrderService.Api.Data;
-using OrderService.Api.Models;
-using System.Net.Http;
+using Orders.Api.Data;
+using Orders.Api.Models;
 
-namespace OrderService.Api.Services;
+namespace Orders.Api.Services;
 
 public class OrderService : IOrderService
 {
@@ -37,7 +35,7 @@ public class OrderService : IOrderService
     {
         var (userId, productId, quantity) = (createOrderCommand.UserId, createOrderCommand.ProductId, createOrderCommand.Quantity);
 
-        if(!await UserExists(userId))
+        if (!await UserExists(userId))
         {
             logger.LogWarning($"Could not create order. User '{userId}' does not exist.");
             return null;
@@ -71,7 +69,7 @@ public class OrderService : IOrderService
     private async Task<bool> IsInventoryAvailable(Guid productId, int quantity)
     {
         var httpClient = httpClientFactory.CreateClient("Inventory");
-        var httpResponseMessage = await httpClient.PostAsJsonAsync($"inventory/{productId}", new { ProductId = productId, Quantity = quantity });
+        var httpResponseMessage = await httpClient.GetAsync($"inventory/{productId}");//await httpClient.PostAsJsonAsync($"inventory/{productId}", new { ProductId = productId, Quantity = quantity });
 
         return httpResponseMessage.IsSuccessStatusCode;
     }

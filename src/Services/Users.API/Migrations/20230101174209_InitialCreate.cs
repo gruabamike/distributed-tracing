@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -12,8 +13,7 @@ namespace DistributedTracingDotNet.Services.Users.Api.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
@@ -27,16 +27,16 @@ namespace DistributedTracingDotNet.Services.Users.Api.Migrations
                 columns: new[] { "Id", "FirstName", "LastName" },
                 values: new object[,]
                 {
-                    { 1, "Khadeeja", "Glenn" },
-                    { 2, "Monty", "Vang" },
-                    { 3, "Roseanne", "Hodges" },
-                    { 4, "Antoine", "Bellamy" },
-                    { 5, "Felicia", "Dowling" },
-                    { 6, "Sidrah", "Humphries" },
-                    { 7, "Carly", "Haas" },
-                    { 8, "Isadora", "Greig" },
-                    { 9, "Cadi", "Bull" },
-                    { 10, "Jaxon", "Gentry" }
+                    { new Guid("00000000-0000-0000-0000-000000000001"), "Khadeeja", "Glenn" },
+                    { new Guid("00000000-0000-0000-0000-000000000002"), "Monty", "Vang" },
+                    { new Guid("00000000-0000-0000-0000-000000000003"), "Roseanne", "Hodges" },
+                    { new Guid("00000000-0000-0000-0000-000000000004"), "Antoine", "Bellamy" },
+                    { new Guid("00000000-0000-0000-0000-000000000005"), "Felicia", "Dowling" },
+                    { new Guid("00000000-0000-0000-0000-000000000006"), "Sidrah", "Humphries" },
+                    { new Guid("00000000-0000-0000-0000-000000000007"), "Carly", "Haas" },
+                    { new Guid("00000000-0000-0000-0000-000000000008"), "Isadora", "Greig" },
+                    { new Guid("00000000-0000-0000-0000-000000000009"), "Cadi", "Bull" },
+                    { new Guid("00000000-0000-0000-0000-000000000010"), "Jaxon", "Gentry" }
                 });
         }
 

@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Client\ConsoleClient\ConsoleClient.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\MessageBroker.ActiveMQ.ManualInstrumentation\MessageBroker.ActiveMQ.ManualInstrumentation.csproj" />
     <ProjectReference Include="..\Notification\Notification.csproj" />
   </ItemGroup>
 

@@ -24,11 +24,27 @@ public class UserService : IUserService
         => await context.Users.FindAsync(id);
 
 
-    public async Task<User?> AddUserAsync(User user)
+    public async Task<User?> AddAsync(User user)
     {
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
         return await context.Users.FindAsync(user.Id);
+    }
+
+    public async Task<bool> UpdateAsync(User user)
+    {
+        var existingUser = await context.Users.FindAsync(user.Id);
+        if (existingUser is null)
+        {
+            return false;
+        }
+
+        // TODO: Update
+        //existingUser.FirstName = user.FirstName;
+        //existingUser.LastName = user.LastName;
+        await context.SaveChangesAsync();
+
+        return true;
     }
 }

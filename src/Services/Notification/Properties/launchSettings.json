@@ -3,7 +3,7 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:12379",
+      "applicationUrl": "https://localhost:9105;http://localhost:9005",
       "sslPort": 44324
     }
   },
@@ -11,17 +11,22 @@
     "Notification": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "applicationUrl": "https://localhost:7288;http://localhost:5051",
+      "launchBrowser": false,
+      "applicationUrl": "https://localhost:9105;http://localhost:9005",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "BrokerUri": "activemq:tcp://localhost:61616",
+        "NotificationProcessingQueueName": "NotificationProcessing"
       }
     },
     "IIS Express": {
       "commandName": "IISExpress",
-      "launchBrowser": true,
+      "launchBrowser": false,
+      "applicationUrl": "https://localhost:9105;http://localhost:9005",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "BrokerUri": "activemq:tcp://localhost:61616",
+        "NotificationProcessingQueueName": "NotificationProcessing"
       }
     }
   }

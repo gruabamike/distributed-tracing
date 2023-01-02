@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OrderService.Api.Models;
+using Orders.Api.Models;
 
-namespace OrderService.Api.Data;
+namespace Orders.Api.Data;
 
 internal class OrderDbInitializer
 {

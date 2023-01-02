@@ -8,5 +8,7 @@ public interface IUserService
 
     Task<User?> GetAsync(Guid id);
 
-    Task<User?> AddUserAsync(User user);
+    Task<User?> AddAsync(User user);
+
+    Task<bool> UpdateAsync(User user);
 }

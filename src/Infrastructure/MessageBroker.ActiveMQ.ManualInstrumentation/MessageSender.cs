@@ -1,36 +1,39 @@
 ﻿using System.Diagnostics;
 using Apache.NMS;
 using Apache.NMS.ActiveMQ;
-using OpenTelemetry.Context.Propagation;
-using OpenTelemetry;
 
 namespace MessageBroker.ActiveMQ.ManualInstrumentation;
 
-public class MessageSender : Contract.IMessageSender // TODO: , IAsyncDisposable
+public class MessageSender : Contract.IMessageSender
 {
-    private static readonly TextMapPropagator Propagator = Propagators.DefaultTextMapPropagator;
-    private readonly Uri messageBrokerUri = new Uri("activemq:tcp://localhost:61616");
+    private readonly IActiveMQContextPropagationHandler contextPropagationHandler;
     private readonly string queueName;
+    private readonly IConnectionFactory connectionFactory;
 
     public MessageSender(
-        Uri messageBrokerUri,
+        IActiveMQContextPropagationHandler contextPropagationHandler,
+        Uri brokerUri,
         string queueName)
     {
+        this.contextPropagationHandler = contextPropagationHandler ?? throw new ArgumentNullException(nameof(contextPropagationHandler));
         if (string.IsNullOrWhiteSpace(queueName))
         {
             throw new ArgumentException($"'{nameof(queueName)}' cannot be null or whitespace.", nameof(queueName));
         }
 
-        this.messageBrokerUri = messageBrokerUri ?? throw new ArgumentNullException(nameof(messageBrokerUri));
         this.queueName = queueName;
+        this.connectionFactory = new ConnectionFactory(brokerUri);
     }
 
     public async Task SendAsync(Contract.IMessage message)
     {
+        var parentContext = Activity.Current?.Context ?? default;
+
         using var activity = ActiveMQSourceInfoProvider.ActivitySource.StartActivity(
-            name: ActiveMQSourceInfoProvider.SendMessageActivityName,
-            kind: ActivityKind.Producer,
-            tags: ActiveMQSourceInfoProvider.ActivityCreationTags!);
+            ActiveMQSourceInfoProvider.SendMessageActivityName,
+            ActivityKind.Producer,
+            parentContext,
+            ActiveMQSourceInfoProvider.ActivityCreationTags!);
 
         ActivityContext contextToInject = default;
         if (activity is not null)
@@ -42,7 +45,6 @@ public class MessageSender : Contract.IMessageSender // TODO: , IAsyncDisposable
             contextToInject = Activity.Current.Context;
         }
 
-        IConnectionFactory connectionFactory = new ConnectionFactory(messageBrokerUri);
         using IConnection connection = await connectionFactory.CreateConnectionAsync();
         await connection.StartAsync();
         using ISession session = await connection.CreateSessionAsync(AcknowledgementMode.AutoAcknowledge);
@@ -53,22 +55,13 @@ public class MessageSender : Contract.IMessageSender // TODO: , IAsyncDisposable
         ITextMessage sendMessage = await session.CreateTextMessageAsync(message.Content);
         sendMessage.NMSCorrelationID = message.Id.ToString();
 
-        Propagator.Inject(new PropagationContext(contextToInject, Baggage.Current), sendMessage.Properties, InjectTraceContext);
-        AddMessageBrokerTags(activity);
+        contextPropagationHandler.Inject(contextToInject, sendMessage);
+        ActiveMQActivityTagHelper.AddMessageBrokerTags(
+            activity: activity,
+            messageSystem: ActiveMQSourceInfoProvider.ApacheActiveMQSystemName,
+            destinationKind: "queue",
+            destination: queueName);
 
         await producer.SendAsync(sendMessage);
-    }
-
-    private void AddMessageBrokerTags(Activity? activity)
-    {
-        activity?.SetTag("messaging.system", "activemq");
-        activity?.SetTag("messaging.destination_kind", "queue");
-        activity?.SetTag("messaging.destination", queueName);
-        activity?.SetTag("messaging.activemq_customTag", "test123");
-    }
-
-    private void InjectTraceContext(IPrimitiveMap messageProperties, string key, string value)
-    {
-        messageProperties.SetString(key, value);
     }
 }

@@ -1,16 +1,18 @@
 using MessageBroker.ActiveMQ.ManualInstrumentation;
 using MessageBroker.Contract;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using OrderService.Api.Data;
-using OrderService.Api.Services;
+using Orders.Api.Data;
+using Orders.Api.Services;
+using System.Net.Mime;
 using System.Reflection;
 
-namespace DistributedTracingDotNet.Services.Orders.Api;
+namespace Orders.Api;
 
 internal class Program
 {
@@ -21,8 +23,6 @@ internal class Program
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-
-        builder.Host.ConfigureLogging(logging => logging.ClearProviders());
 
         builder.Logging.AddOpenTelemetry(options =>
         {
@@ -50,14 +50,30 @@ internal class Program
             )
             .StartWithHost();
 
-        builder.Services.AddScoped<IOrderService, OrderService.Api.Services.OrderService>();
-        builder.Services.AddScoped<IMessageSender, MessageSender>((_) => new MessageSender(new Uri("activemq:tcp://localhost:61616"), "OrderProcessing"));
+        builder.Services.AddScoped<IOrderService, OrderService>();
+        builder.Services.AddScoped<IMessageSender, MessageSender>((_)
+            => new MessageSender(
+                new ActiveMQContextPropagationHandler(),
+                new Uri("activemq:tcp://localhost:61616"),
+                "OrderProcessing"));
 
-        builder.Services.AddHttpClient();
+        builder.Services.AddHttpClient("Users", httpClient =>
+        {
+            httpClient.BaseAddress = new Uri("http://localhost:9002");
+            httpClient.DefaultRequestHeaders.Add(HeaderNames.Accept, MediaTypeNames.Application.Json);
+            httpClient.DefaultRequestHeaders.Add(HeaderNames.UserAgent, nameof(Orders.Api));
+        });
+        builder.Services.AddHttpClient("Inventory", httpClient =>
+        {
+            httpClient.BaseAddress = new Uri("http://localhost:9003");
+            httpClient.DefaultRequestHeaders.Add(HeaderNames.Accept, MediaTypeNames.Application.Json);
+            httpClient.DefaultRequestHeaders.Add(HeaderNames.UserAgent, nameof(Orders.Api));
+        });
         builder.Services.AddControllers();
         builder.Services.AddDbContext<DataContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+        builder.Services.AddAutoMapper(typeof(Program));
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 

@@ -1,3 +1,3 @@
 ﻿namespace Inventory.Api.Dtos;
 
-public record InventoryDto(Guid InventoryId, int StockQuantity);
+public record InventoryDto(Guid ProductId, int StockQuantity);

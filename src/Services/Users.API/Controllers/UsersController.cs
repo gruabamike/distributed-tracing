@@ -46,7 +46,7 @@ public class UsersController : ControllerBase
     {
         var user = mapper.Map<User>(newUser);
 
-        user = await userService.AddUserAsync(user);
+        user = await userService.AddAsync(user);
         if (user is null)
         {
             return BadRequest();
@@ -58,20 +58,15 @@ public class UsersController : ControllerBase
             mapper.Map<UserDto>(user));
     }
 
-    /*
     [HttpPut]
-    public async Task<ActionResult> UpdateUser(User updatedUser)
+    public async Task<ActionResult> UpdateUser(UserForUpdateDto updatedUser)
     {
-        var user = await userService.GetAsync(updatedUser.Id);
-        if (user is null)
+        User user = mapper.Map<User>(updatedUser);
+        if (!await userService.UpdateAsync(user))
         {
-            return BadRequestUserNotFound(updatedUser.Id);
+            return NotFound();
         }
 
-        user.FirstName = updatedUser.FirstName;
-        user.LastName = updatedUser.LastName;
-
-        return Ok();
+        return NoContent();
     }
-    */
 }

@@ -1,7 +1,7 @@
 ﻿using Orders.Api.Commands;
-using OrderService.Api.Models;
+using Orders.Api.Models;
 
-namespace OrderService.Api.Services;
+namespace Orders.Api.Services;
 
 public interface IOrderService
 {

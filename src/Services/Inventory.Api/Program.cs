@@ -16,7 +16,6 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Host.ConfigureLogging(logging => logging.ClearProviders());
         builder.Logging.AddOpenTelemetry(options =>
         {
             options.IncludeFormattedMessage = true;
@@ -45,6 +44,7 @@ internal class Program
 
         builder.Services.AddScoped<IInventoryService, InventoryService>();
 
+        builder.Services.AddAutoMapper(typeof(Program));
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();

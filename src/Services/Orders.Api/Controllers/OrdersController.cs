@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
-using ConsoleClient;
 using MessageBroker.Contract;
 using Microsoft.AspNetCore.Mvc;
 using Orders.Api.Commands;
 using Orders.Api.Dtos;
-using OrderService.Api.Services;
+using Orders.Api.Services;
 
-namespace OrderService.Api.Controllers;
+namespace Orders.Api.Controllers;
 [Route("[controller]")]
 [ApiController]
 public class OrdersController : ControllerBase

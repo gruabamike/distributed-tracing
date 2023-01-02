@@ -1,50 +1,52 @@
 ﻿using Apache.NMS.ActiveMQ;
 using Apache.NMS;
 using System.Diagnostics;
-using OpenTelemetry.Context.Propagation;
-using OpenTelemetry;
 
 namespace MessageBroker.ActiveMQ.ManualInstrumentation;
 
-public class MessageReceiver : Contract.IMessageReceiver
+public class MessageReceiver : Contract.IMessageReceiver, IDisposable
 {
-    private static readonly TextMapPropagator Propagator = Propagators.DefaultTextMapPropagator;
-
-    private readonly Uri messageBrokerUri = new Uri("activemq:tcp://localhost:61616");
+    private readonly IActiveMQContextPropagationHandler contextPropagationHandler;
     private readonly string queueName;
     private readonly Func<Contract.IMessage, Task> messageHandler;
 
+    private readonly IConnectionFactory connectionFactory;
+    private IConnection? connection;
+    private ISession? session;
+    private IDestination? destination;
+    private IMessageConsumer? messageConsumer;
+
     public MessageReceiver(
-        Uri messageBrokerUri,
+        IActiveMQContextPropagationHandler contextPropagationHandler,
+        Uri brokerUri,
         string queueName,
         Func<Contract.IMessage, Task> messageHandler)
     {
+        this.contextPropagationHandler = contextPropagationHandler ?? throw new ArgumentNullException(nameof(contextPropagationHandler));
         if (string.IsNullOrWhiteSpace(queueName))
         {
             throw new ArgumentException($"'{nameof(queueName)}' cannot be null or whitespace.", nameof(queueName));
         }
 
-        this.messageBrokerUri = messageBrokerUri ?? throw new ArgumentNullException(nameof(messageBrokerUri));
+        this.connectionFactory = new ConnectionFactory(brokerUri);
         this.queueName = queueName;
         this.messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
     }
 
-    public async Task ReceiveAsync()
+    public async Task StartReceiveAsync()
     {
-        IConnectionFactory connectionFactory = new ConnectionFactory(messageBrokerUri);
-        using IConnection connection = await connectionFactory.CreateConnectionAsync();
+        connection = await connectionFactory.CreateConnectionAsync();
         await connection.StartAsync();
-        using ISession session = await connection.CreateSessionAsync(AcknowledgementMode.AutoAcknowledge);
-        using IDestination destination = await session.GetQueueAsync(queueName);
+        session = await connection.CreateSessionAsync(AcknowledgementMode.AutoAcknowledge);
+        destination = await session.GetQueueAsync(queueName);
 
-        using IMessageConsumer consumer = await session.CreateConsumerAsync(destination);
-        consumer.Listener += OnMessageReceived;
+        messageConsumer = await session.CreateConsumerAsync(destination);
+        messageConsumer.Listener += OnMessageReceived;
     }
 
-    private void OnMessageReceived(IMessage message)
+    private async void OnMessageReceived(IMessage message)
     {
-        var parentContext = Propagator.Extract(default, message.Properties, ExtractTraceContext);
-        Baggage.Current = parentContext.Baggage;
+        var parentContext = contextPropagationHandler.Extract(message);
 
         using var activity = ActiveMQSourceInfoProvider.ActivitySource.StartActivity(
             ActiveMQSourceInfoProvider.ReceiveMessageActivityName,
@@ -52,32 +54,19 @@ public class MessageReceiver : Contract.IMessageReceiver
             parentContext.ActivityContext,
             ActiveMQSourceInfoProvider.ActivityCreationTags!);
 
-        AddMessageBrokerTags(activity);
-        messageHandler(new Contract.TextMessage(message?.ToString() ?? string.Empty));
+        ActiveMQActivityTagHelper.AddMessageBrokerTags(
+            activity: activity,
+            messageSystem: ActiveMQSourceInfoProvider.ApacheActiveMQSystemName,
+            destinationKind: "queue",
+            destination: queueName);
+        await messageHandler(new Contract.TextMessage(message?.ToString() ?? string.Empty));
     }
 
-    private IEnumerable<string> ExtractTraceContext(IPrimitiveMap messageProperties, string key)
+    public void Dispose()
     {
-        try
-        {
-            if (messageProperties.Contains(key))
-            {
-                return new[] { messageProperties.GetString(key) };
-            }
-        }
-        catch (Exception)
-        {
-            // TODO: Logging
-        }
-
-        return Enumerable.Empty<string>();
-    }
-
-    private void AddMessageBrokerTags(Activity? activity)
-    {
-        activity?.SetTag("messaging.system", "activemq");
-        activity?.SetTag("messaging.destination_kind", "queue");
-        activity?.SetTag("messaging.destination", queueName);
-        activity?.SetTag("messaging.activemq_customTag", "test123");
+        messageConsumer?.Dispose();
+        destination?.Dispose();
+        session?.Dispose();
+        connection?.Dispose();
     }
 }

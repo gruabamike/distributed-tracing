@@ -3,11 +3,17 @@ using OpenTelemetry;
 using System.Diagnostics;
 using System.Reflection;
 using OpenTelemetry.Trace;
+using MessageBroker.Contract;
+using MessageBroker.ActiveMQ.ManualInstrumentation;
+using Notification.Messages;
 
 namespace Notification;
 
 internal class Program
 {
+    private const string BROKER_URI_ENVIRONMENT_VARIABLE_NAME = "BrokerUri";
+    private const string NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME = "NotificationProcessingQueueName";
+
     private static readonly AssemblyName AssemblyName = typeof(Program).Assembly.GetName();
     private static readonly string ServiceName = AssemblyName.Name!;
     private static readonly string ServiceVersion = AssemblyName?.Version?.ToString() ?? "1.0.0";
@@ -17,6 +23,12 @@ internal class Program
     private static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile($"appsettings.json", true)
+            .AddJsonFile($"appsettings.{environment}.json", true)
+            .AddEnvironmentVariables()
+            .Build();
 
         using var tracerProvider = Sdk.CreateTracerProviderBuilder()
                     .AddSource(ServiceName)
@@ -25,13 +37,26 @@ internal class Program
                         options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
                     .Build();
 
+        var (brokerUri, notificationProcessingQueueName) = (
+            new Uri(Environment.GetEnvironmentVariable(BROKER_URI_ENVIRONMENT_VARIABLE_NAME)!),
+            Environment.GetEnvironmentVariable(NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME)!);
+
+        using IMessageReceiver messageReceiver = new MessageReceiver(
+            new ActiveMQContextPropagationHandler(),
+            brokerUri,
+            notificationProcessingQueueName,
+            async (IMessage message) =>
+            {
+                using (var activity = ActivitySource.StartActivity("Sending mail notification"))
+                {
+                    INotificationManager notificationManager = new NotificationManager();
+                    await notificationManager.Notify(new NotificationMessage(message.Content, message.Content));
+                }
+            });
+
         var app = builder.Build();
 
-        using (var activity = ActivitySource.StartActivity("Notify"))
-        {
-            await Task.Delay(500);
-        }
-
+        await messageReceiver.StartReceiveAsync();
         app.Run();
     }
 
