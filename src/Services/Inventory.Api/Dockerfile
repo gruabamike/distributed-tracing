@@ -1,8 +1,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-WORKDIR /app
-COPY . ./
-RUN dotnet restore
-RUN dotnet publish -c release -o /app --no-restore
+WORKDIR /src
+
+COPY ./Infrastructure ./Infrastructure
+COPY ./Services/Inventory.Api ./Services/Inventory.Api
+
+WORKDIR /src/Services/Inventory.Api/
+
+RUN dotnet restore \
+  && dotnet publish -c release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
 WORKDIR /app

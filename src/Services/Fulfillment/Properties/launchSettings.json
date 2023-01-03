@@ -15,9 +15,10 @@
       "applicationUrl": "https://localhost:9104;http://localhost:9004",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "BrokerUri": "activemq:tcp://localhost:61616",
-        "OrderProcessingQueueName": "OrderProcessing",
-        "NotificationProcessingQueueName": "NotificationProcessing"
+        "BROKER_URI": "activemq:tcp://localhost:61616",
+        "ORDER_PROCESSING_QUEUE_NAME": "OrderProcessing",
+        "NOTIFICATION_PROCESSING_QUEUE_NAME": "NotificationProcessing",
+        "OTEL_COLLECTOR_URI": "http://localhost:4318"
       }
     },
     "IIS Express": {
@@ -26,9 +27,10 @@
       "applicationUrl": "https://localhost:9104;http://localhost:9004",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "BrokerUri": "activemq:tcp://localhost:61616",
-        "OrderProcessingQueueName": "OrderProcessing",
-        "NotificationProcessingQueueName": "NotificationProcessing"
+        "BROKER_URI": "activemq:tcp://localhost:61616",
+        "ORDER_PROCESSING_QUEUE_NAME": "OrderProcessing",
+        "NOTIFICATION_PROCESSING_QUEUE_NAME": "NotificationProcessing",
+        "OTEL_COLLECTOR_URI": "http://localhost:4318"
       }
     }
   }

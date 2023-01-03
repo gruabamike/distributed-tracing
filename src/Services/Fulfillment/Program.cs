@@ -4,16 +4,15 @@ using OpenTelemetry;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 
 namespace Fulfillment;
 
 internal class Program
 {
-    private const string BROKER_URI_ENVIRONMENT_VARIABLE_NAME = "BrokerUri";
-    private const string ORDER_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME = "OrderProcessingQueueName";
-    private const string NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME = "NotificationProcessingQueueName";
+    private const string BROKER_URI_ENVIRONMENT_VARIABLE_NAME = "BROKER_URI";
+    private const string ORDER_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME = "ORDER_PROCESSING_QUEUE_NAME";
+    private const string NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME = "NOTIFICATION_PROCESSING_QUEUE_NAME";
 
     private static readonly AssemblyName AssemblyName = typeof(Program).Assembly.GetName();
     private static readonly string ServiceName = AssemblyName.Name!;
@@ -37,17 +36,6 @@ internal class Program
                     .SetResourceBuilder(GetResourceBuilder())
                     .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
                     .Build();
-        /*
-        builder.Services.AddOpenTelemetry()
-            .WithTracing(builder => builder
-                .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
-                .AddSource(serviceName, nameof(ActiveMQInstrumentationBroker))
-                .SetResourceBuilder(
-                    ResourceBuilder.CreateDefault()
-                        .AddService(serviceName, serviceVersion: serviceVersion))
-            )
-            .StartWithHost();
-        */
 
         var (brokerUri, orderProcessingQueueName, notificationProcessingQueueName) = (
             new Uri(Environment.GetEnvironmentVariable(BROKER_URI_ENVIRONMENT_VARIABLE_NAME)!),

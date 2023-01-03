@@ -16,6 +16,11 @@ namespace Orders.Api;
 
 internal class Program
 {
+    private const string BROKER_URI_ENVIRONMENT_VARIABLE_NAME = "BROKER_URI";
+    private const string USERS_API_URI_ENVIRONMENT_VARIALBE_NAME = "USERS_API_URI";
+    private const string INVENTORY_API_URI_ENVIRONMENT_VARIALBE_NAME = "INVENTORY_API_URI";
+    private const string ORDER_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME = "ORDER_PROCESSING_QUEUE_NAME";
+
     private static readonly AssemblyName AssemblyName = typeof(Program).Assembly.GetName();
     private static readonly string ServiceName = AssemblyName.Name!;
     private static readonly string ServiceVersion = AssemblyName?.Version?.ToString() ?? "1.0.0";
@@ -54,18 +59,18 @@ internal class Program
         builder.Services.AddScoped<IMessageSender, MessageSender>((_)
             => new MessageSender(
                 new ActiveMQContextPropagationHandler(),
-                new Uri("activemq:tcp://localhost:61616"),
-                "OrderProcessing"));
+                new Uri(Environment.GetEnvironmentVariable(BROKER_URI_ENVIRONMENT_VARIABLE_NAME)!),
+                Environment.GetEnvironmentVariable(ORDER_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME)!));
 
         builder.Services.AddHttpClient("Users", httpClient =>
         {
-            httpClient.BaseAddress = new Uri("http://localhost:9002");
+            httpClient.BaseAddress = new Uri(Environment.GetEnvironmentVariable(USERS_API_URI_ENVIRONMENT_VARIALBE_NAME)!);
             httpClient.DefaultRequestHeaders.Add(HeaderNames.Accept, MediaTypeNames.Application.Json);
             httpClient.DefaultRequestHeaders.Add(HeaderNames.UserAgent, nameof(Orders.Api));
         });
         builder.Services.AddHttpClient("Inventory", httpClient =>
         {
-            httpClient.BaseAddress = new Uri("http://localhost:9003");
+            httpClient.BaseAddress = new Uri(Environment.GetEnvironmentVariable(INVENTORY_API_URI_ENVIRONMENT_VARIALBE_NAME)!);
             httpClient.DefaultRequestHeaders.Add(HeaderNames.Accept, MediaTypeNames.Application.Json);
             httpClient.DefaultRequestHeaders.Add(HeaderNames.UserAgent, nameof(Orders.Api));
         });

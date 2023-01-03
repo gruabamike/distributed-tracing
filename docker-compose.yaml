@@ -1,43 +1,106 @@
 version: '3.9'
 
 services:
-  api-users:
-    container_name: tracing-api-users
-    build: ./src/Services/Users.Api
-    ports:
-      - "8010:80"
-      - "8011:443"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-    depends_on:
-      - otel-collector
-      - db-sqlserver
-
   api-orders:
-    container_name: tracing-api-orders
-    build: ./src/Services/Orders.Api
+    container_name: api-orders
+    build:
+      context: ./src
+      dockerfile: Services/Orders.Api/Dockerfile
     ports:
-      - "8020:80"
-      - "8021:443"
+      - "9001:80"
+      - "9101:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - USERS_API_URI=http://api-users
+      - INVENTORY_API_URI=http://api-inventory
+      - BROKER_URI=activemq:tcp://active-mq:61616
+      - ORDER_PROCESSING_QUEUE_NAME=OrderProcessing
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - ConnectionStrings:DefaultConnection=Server=db-sqlserver;Database=orderdb;User ID=SA;Password=P@ssw0rD;TrustServerCertificate=true
     depends_on:
       - otel-collector
       - db-sqlserver
+      - active-mq
+
+  api-users:
+    container_name: api-users
+    build:
+      context: ./src
+      dockerfile: Services/Users.Api/Dockerfile
+    ports:
+      - "9002:80"
+      - "9102:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - ConnectionStrings:DefaultConnection=Server=db-sqlserver;Database=userdb;User ID=SA;Password=P@ssw0rD;TrustServerCertificate=true
+    depends_on:
+      - otel-collector
+      - db-sqlserver
+      - active-mq
 
   api-inventory:
-    container_name: tracing-api-inventory
-    build: ./src/Services/Inventory.Api
+    container_name: api-inventory
+    build:
+      context: ./src
+      dockerfile: Services/Inventory.Api/Dockerfile
     ports:
-      - "8030:80"
-      - "8031:443"
+      - "9003:80"
+      - "9103:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
     depends_on:
       - otel-collector
 
+  svc-fulfillment:
+    container_name: svc-fulfillment
+    build:
+      context: ./src
+      dockerfile: Services/Fulfillment/Dockerfile
+    ports:
+      - "9004:80"
+      - "9104:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - BROKER_URI=activemq:tcp://active-mq:61616
+      - ORDER_PROCESSING_QUEUE_NAME=OrderProcessing
+      - NOTIFICATION_PROCESSING_QUEUE_NAME=NotificationProcessing
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+    depends_on:
+      - otel-collector
+      - active-mq
+      - api-orders
+      - api-users
+      - api-inventory
+
+  svc-notification:
+    container_name: svc-notification
+    build:
+      context: ./src
+      dockerfile: Services/Notification/Dockerfile
+    ports:
+      - "9005:80"
+      - "9105:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - BROKER_URI=activemq:tcp://active-mq:61616
+      - NOTIFICATION_PROCESSING_QUEUE_NAME=NotificationProcessing
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+    depends_on:
+      - otel-collector
+      - active-mq
+      - api-orders
+      - api-users
+      - api-inventory
+
   active-mq:
-    container_name: tracing-active-mq
+    container_name: active-mq
     image: "rmohr/activemq:latest"
     ports:
       - 61616:61616 # JMS
@@ -45,7 +108,7 @@ services:
       - 8161:8161   # UI
 
   db-sqlserver:
-    container_name: tracing-db-sqlserver
+    container_name: db-sqlserver
     image: "mcr.microsoft.com/mssql/server:2022-latest"
     ports:
       - "1440:1433"
@@ -55,7 +118,7 @@ services:
       MSSQL_PID: "Express"
 
   otel-collector:
-    container_name: tracing-otel-collector
+    container_name: otel-collector
     image: otel/opentelemetry-collector-contrib:latest
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
@@ -74,7 +137,7 @@ services:
       - prometheus
 
   jaeger:
-    container_name: tracing-jaeger
+    container_name: jaeger
     image: jaegertracing/all-in-one:latest
     ports:
       - "14250:14250"
@@ -82,13 +145,13 @@ services:
       - "16686:16686"
 
   zipkin:
-    container_name: tracing-zipkin
+    container_name: zipkin
     image: openzipkin/zipkin:latest
     ports:
       - "9411:9411"
 
   prometheus:
-    container_name: tracing-prometheus
+    container_name: prometheus
     image: prom/prometheus:latest
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml  # the config file in container must have the file extension ".yml"

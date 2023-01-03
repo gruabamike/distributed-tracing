@@ -16,7 +16,12 @@
       "launchUrl": "swagger",
       "applicationUrl": "https://localhost:9101;http://localhost:9001",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "USERS_API_URI": "http://localhost:9002",
+        "INVENTORY_API_URI": "http://localhost:9003",
+        "BROKER_URI": "activemq:tcp://localhost:61616",
+        "ORDER_PROCESSING_QUEUE_NAME": "OrderProcessing",
+        "OTEL_COLLECTOR_URI": "http://localhost:4318"
       }
     },
     "IIS Express": {
@@ -24,7 +29,12 @@
       "launchBrowser": false,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "USERS_API_URI": "http://localhost:9002",
+        "INVENTORY_API_URI": "http://localhost:9003",
+        "BROKER_URI": "activemq:tcp://localhost:61616",
+        "ORDER_PROCESSING_QUEUE_NAME": "OrderProcessing",
+        "OTEL_COLLECTOR_URI": "http://localhost:4318"
       }
     }
   }

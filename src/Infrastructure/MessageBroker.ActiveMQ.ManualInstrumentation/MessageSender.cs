@@ -27,13 +27,10 @@ public class MessageSender : Contract.IMessageSender
 
     public async Task SendAsync(Contract.IMessage message)
     {
-        var parentContext = Activity.Current?.Context ?? default;
-
         using var activity = ActiveMQSourceInfoProvider.ActivitySource.StartActivity(
-            ActiveMQSourceInfoProvider.SendMessageActivityName,
-            ActivityKind.Producer,
-            parentContext,
-            ActiveMQSourceInfoProvider.ActivityCreationTags!);
+            name: ActiveMQSourceInfoProvider.SendMessageActivityName,
+            kind: ActivityKind.Producer,
+            tags: ActiveMQSourceInfoProvider.ActivityCreationTags!);
 
         ActivityContext contextToInject = default;
         if (activity is not null)

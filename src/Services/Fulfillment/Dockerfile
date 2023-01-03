@@ -2,9 +2,9 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 
 COPY ./Infrastructure ./Infrastructure
-COPY ./Services/Users.Api ./Services/Users.Api
+COPY ./Services/Fulfillment ./Services/Fulfillment
 
-WORKDIR /src/Services/Users.Api/
+WORKDIR /src/Services/Fulfillment/
 
 RUN dotnet restore \
   && dotnet publish -c release -o /app --no-restore
@@ -14,4 +14,4 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 COPY --from=build /app ./
-ENTRYPOINT [ "dotnet", "Users.Api.dll" ]
+ENTRYPOINT [ "dotnet", "Fulfillment.dll" ]
