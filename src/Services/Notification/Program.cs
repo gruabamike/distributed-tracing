@@ -6,11 +6,14 @@ using OpenTelemetry.Trace;
 using MessageBroker.Contract;
 using MessageBroker.ActiveMQ.ManualInstrumentation;
 using Notification.Messages;
+using Polly;
 
 namespace Notification;
 
 internal class Program
 {
+    private const int MAX_BROKER_CONNETION_RETRIES = 5;
+
     private const string BROKER_URI_ENVIRONMENT_VARIABLE_NAME = "BROKER_URI";
     private const string NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME = "NOTIFICATION_PROCESSING_QUEUE_NAME";
 
@@ -29,6 +32,12 @@ internal class Program
             .AddJsonFile($"appsettings.{environment}.json", true)
             .AddEnvironmentVariables()
             .Build();
+
+        var logger = LoggerFactory.Create(config =>
+        {
+            config.AddConsole();
+            config.AddConfiguration(builder.Configuration.GetSection("Logging"));
+        }).CreateLogger(nameof(Notification));
 
         using var tracerProvider = Sdk.CreateTracerProviderBuilder()
                     .AddSource(ServiceName, ActiveMQSourceInfoProvider.ActivitySourceName)
@@ -55,7 +64,20 @@ internal class Program
 
         var app = builder.Build();
 
-        await messageReceiver.StartReceiveAsync();
+        var retryPolicy = Policy
+            .Handle<Apache.NMS.NMSConnectionException>()
+            .WaitAndRetryAsync(
+                MAX_BROKER_CONNETION_RETRIES,
+                (retryAttempt) =>
+                {
+                    var sleepDuration = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt) / 2);
+                    logger.LogInformation($"retry connecting to message broker (#{retryAttempt}; sleepDuration: {sleepDuration.Seconds}s)");
+                    return sleepDuration;
+                });
+
+        await retryPolicy.ExecuteAsync(() => messageReceiver.StartReceiveAsync());
+        logger.LogInformation("successfully connected to message broker");
+
         app.Run();
     }
 
