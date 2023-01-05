@@ -30,8 +30,8 @@ internal static class ActiveMQDiagnosticListenerExtensions
             BeforeConnectionStart,
             new
             {
-                BrokerUri = connectionFactory.BrokerUri,
-                ClientId = connection.ClientId,
+                BrokerUri = connectionFactory?.BrokerUri,
+                ClientId = connection?.ClientId,
                 ConnectionFactory = connectionFactory,
                 Connection = connection
             });
@@ -45,8 +45,8 @@ internal static class ActiveMQDiagnosticListenerExtensions
             AfterConnectionStart,
             new
             {
-                BrokerUri = connectionFactory.BrokerUri,
-                ClientId = connection.ClientId,
+                BrokerUri = connectionFactory?.BrokerUri,
+                ClientId = connection?.ClientId,
                 ConnectionFactory = connectionFactory,
                 Connection = connection
             });
@@ -61,8 +61,8 @@ internal static class ActiveMQDiagnosticListenerExtensions
             ErrorConnectionStart,
             new
             {
-                BrokerUri = connectionFactory.BrokerUri,
-                ClientId = connection.ClientId,
+                BrokerUri = connectionFactory?.BrokerUri,
+                ClientId = connection?.ClientId,
                 ConnectionFactory = connectionFactory,
                 Connection = connection,
                 Exception = exception

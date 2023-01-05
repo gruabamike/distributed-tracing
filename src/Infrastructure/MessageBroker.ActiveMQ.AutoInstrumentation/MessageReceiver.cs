@@ -8,7 +8,6 @@ public class MessageReceiver : Contract.IMessageReceiver, IDisposable
 {
     private static readonly ActiveMQDiagnosticListener diagnosticListener = new(ActiveMQDiagnosticListenerExtensions.DiagnosticListenerName);
 
-    private readonly IActiveMQContextPropagationHandler contextPropagationHandler;
     private readonly string queueName;
     private readonly Func<Contract.IMessage, Task> messageHandler;
 
@@ -18,13 +17,10 @@ public class MessageReceiver : Contract.IMessageReceiver, IDisposable
     private IDestination? destination;
     private IMessageConsumer? messageConsumer;
 
-    public MessageReceiver(
-        IActiveMQContextPropagationHandler contextPropagationHandler,
-        Uri brokerUri,
+    public MessageReceiver(Uri brokerUri,
         string queueName,
         Func<Contract.IMessage, Task> messageHandler)
     {
-        this.contextPropagationHandler = contextPropagationHandler ?? throw new ArgumentNullException(nameof(contextPropagationHandler));
         if (string.IsNullOrWhiteSpace(queueName))
         {
             throw new ArgumentException($"'{nameof(queueName)}' cannot be null or whitespace.", nameof(queueName));
@@ -68,20 +64,6 @@ public class MessageReceiver : Contract.IMessageReceiver, IDisposable
 
     private async void OnMessageReceived(IMessage message)
     {
-        var parentContext = contextPropagationHandler.Extract(message);
-
-        using var activity = ActiveMQSourceInfoProvider.ActivitySource.StartActivity(
-            ActiveMQSourceInfoProvider.ReceiveMessageActivityName,
-            ActivityKind.Consumer,
-            parentContext.ActivityContext,
-            ActiveMQSourceInfoProvider.ActivityCreationTags!);
-
-        ActiveMQActivityTagHelper.AddMessageBrokerTags(
-            activity: activity,
-            messageSystem: ActiveMQSourceInfoProvider.ApacheActiveMQSystemName,
-            destinationKind: "queue",
-            destination: queueName);
-
         Exception? exception = default;
 
         try

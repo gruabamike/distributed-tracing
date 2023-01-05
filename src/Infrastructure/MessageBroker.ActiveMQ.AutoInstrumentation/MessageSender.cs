@@ -8,16 +8,13 @@ public class MessageSender : Contract.IMessageSender
 {
     private static readonly ActiveMQDiagnosticListener diagnosticListener = new(ActiveMQDiagnosticListenerExtensions.DiagnosticListenerName);
 
-    private readonly IActiveMQContextPropagationHandler contextPropagationHandler;
     private readonly string queueName;
     private readonly IConnectionFactory connectionFactory;
 
     public MessageSender(
-        IActiveMQContextPropagationHandler contextPropagationHandler,
         Uri brokerUri,
         string queueName)
     {
-        this.contextPropagationHandler = contextPropagationHandler ?? throw new ArgumentNullException(nameof(contextPropagationHandler));
         if (string.IsNullOrWhiteSpace(queueName))
         {
             throw new ArgumentException($"'{nameof(queueName)}' cannot be null or whitespace.", nameof(queueName));
@@ -29,21 +26,6 @@ public class MessageSender : Contract.IMessageSender
 
     public async Task SendAsync(Contract.IMessage message)
     {
-        using var activity = ActiveMQSourceInfoProvider.ActivitySource.StartActivity(
-            name: ActiveMQSourceInfoProvider.SendMessageActivityName,
-            kind: ActivityKind.Producer,
-            tags: ActiveMQSourceInfoProvider.ActivityCreationTags!);
-
-        ActivityContext contextToInject = default;
-        if (activity is not null)
-        {
-            contextToInject = activity.Context;
-        }
-        else if (Activity.Current is not null)
-        {
-            contextToInject = Activity.Current.Context;
-        }
-
         Exception? exception = default;
         IConnection? connection = default;
         try
@@ -73,13 +55,6 @@ public class MessageSender : Contract.IMessageSender
         messageProducer.DeliveryMode = MsgDeliveryMode.NonPersistent;
         ITextMessage sendMessage = await session.CreateTextMessageAsync(message.Content);
         sendMessage.NMSCorrelationID = message.Id.ToString();
-
-        contextPropagationHandler.Inject(contextToInject, sendMessage);
-        ActiveMQActivityTagHelper.AddMessageBrokerTags(
-            activity: activity,
-            messageSystem: ActiveMQSourceInfoProvider.ApacheActiveMQSystemName,
-            destinationKind: "queue",
-            destination: queueName);
 
         exception = default;
         try

@@ -1,4 +1,4 @@
-﻿using MessageBroker.ActiveMQ.ManualInstrumentation;
+﻿using MessageBroker.ActiveMQ.AutoInstrumentation;
 using MessageBroker.Contract;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
@@ -41,9 +41,10 @@ internal class Program
         }).CreateLogger(nameof(Fulfillment));
 
         using var tracerProvider = Sdk.CreateTracerProviderBuilder()
-                    .AddSource(ServiceName, ActiveMQSourceInfoProvider.ActivitySourceName)
                     .SetResourceBuilder(GetResourceBuilder())
+                    .AddSource(ServiceName)
                     .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
+                    .AddActiveMQInstrumentation()
                     .Build();
 
         var (brokerUri, orderProcessingQueueName, notificationProcessingQueueName) = (
@@ -52,7 +53,6 @@ internal class Program
             Environment.GetEnvironmentVariable(NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME)!);
 
         using IMessageReceiver messageReceiver = new MessageReceiver(
-            new ActiveMQContextPropagationHandler(),
             brokerUri,
             orderProcessingQueueName,
             async (IMessage message) =>
@@ -66,7 +66,6 @@ internal class Program
                 using (var activity = ActivitySource.StartActivity("Send notification"))
                 {
                     IMessageSender messageSender = new MessageSender(
-                        new ActiveMQContextPropagationHandler(),
                         brokerUri,
                         notificationProcessingQueueName);
                     await messageSender.SendAsync(new TextMessage(message.Content));

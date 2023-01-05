@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using OpenTelemetry.Trace;
 using MessageBroker.Contract;
-using MessageBroker.ActiveMQ.ManualInstrumentation;
+using MessageBroker.ActiveMQ.AutoInstrumentation;
 using Notification.Messages;
 using Polly;
 
@@ -40,9 +40,10 @@ internal class Program
         }).CreateLogger(nameof(Notification));
 
         using var tracerProvider = Sdk.CreateTracerProviderBuilder()
-                    .AddSource(ServiceName, ActiveMQSourceInfoProvider.ActivitySourceName)
                     .SetResourceBuilder(GetResourceBuilder())
                     .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
+                    .AddSource(ServiceName)
+                    .AddActiveMQInstrumentation()
                     .Build();
 
         var (brokerUri, notificationProcessingQueueName) = (
@@ -50,7 +51,6 @@ internal class Program
             Environment.GetEnvironmentVariable(NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME)!);
 
         using IMessageReceiver messageReceiver = new MessageReceiver(
-            new ActiveMQContextPropagationHandler(),
             brokerUri,
             notificationProcessingQueueName,
             async (IMessage message) =>
