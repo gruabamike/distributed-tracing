@@ -1,6 +1,5 @@
 ﻿using Apache.NMS.ActiveMQ;
 using Apache.NMS;
-using System.Diagnostics;
 
 namespace MessageBroker.ActiveMQ.AutoInstrumentation;
 

@@ -101,5 +101,8 @@ internal class Program
     }
 
     private static ResourceBuilder GetResourceBuilder()
-        => ResourceBuilder.CreateDefault().AddService(ServiceName, ServiceVersion);
+        => ResourceBuilder.CreateDefault().AddService(
+            serviceName: ServiceName,
+            serviceNamespace: ServiceName,
+            serviceVersion: ServiceVersion);
 }

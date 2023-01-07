@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Apache.NMS;
+﻿using Apache.NMS;
 using Apache.NMS.ActiveMQ;
 
 namespace MessageBroker.ActiveMQ.AutoInstrumentation;
@@ -59,9 +58,9 @@ public class MessageSender : Contract.IMessageSender
         exception = default;
         try
         {
-            diagnosticListener.WriteMessageSendBefore(destination, messageProducer, sendMessage);
+            diagnosticListener.WriteMessageSendBefore(null, connection, sendMessage); // TODO
             await messageProducer.SendAsync(sendMessage);
-            diagnosticListener.WriteMessageSendAfter(destination, messageProducer, sendMessage);
+            diagnosticListener.WriteMessageSendAfter(null, connection, sendMessage); // TODO
         }
         catch (Exception e)
         {
@@ -72,7 +71,7 @@ public class MessageSender : Contract.IMessageSender
         {
             if (exception is not null)
             {
-                diagnosticListener.WriteMessageSendError(destination, messageProducer, sendMessage, exception);
+                diagnosticListener.WriteMessageSendError(null, connection, sendMessage, exception); // TODO
             }
         }
 

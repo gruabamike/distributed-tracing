@@ -3,10 +3,11 @@ WORKDIR /src
 
 COPY ./Infrastructure ./Infrastructure
 COPY ./Services/Notification ./Services/Notification
+COPY ./nuget.config .
 
 WORKDIR /src/Services/Notification/
 
-RUN dotnet restore \
+RUN dotnet restore --ignore-failed-sources \
   && dotnet publish -c release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:6.0

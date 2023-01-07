@@ -3,10 +3,11 @@ WORKDIR /src
 
 COPY ./Infrastructure ./Infrastructure
 COPY ./Services/Fulfillment ./Services/Fulfillment
+COPY ./nuget.config .
 
 WORKDIR /src/Services/Fulfillment/
 
-RUN dotnet restore \
+RUN dotnet restore --ignore-failed-sources \
   && dotnet publish -c release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
