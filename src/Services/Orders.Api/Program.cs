@@ -12,6 +12,7 @@ using Orders.Api.Data;
 using Orders.Api.Provider;
 using Orders.Api.Services;
 using Polly;
+using System.Diagnostics;
 using System.Net.Mime;
 using System.Reflection;
 
@@ -58,7 +59,6 @@ internal class Program
             )
             .WithTracing(builder => builder
                 .AddOtlpExporter(options => options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf)
-                //.AddSource(ActiveMQSourceInfoProvider.ActivitySourceName)
                 .SetResourceBuilder(GetResourceBuilder())
                 .AddHttpClientInstrumentation()
                 .AddAspNetCoreInstrumentation()

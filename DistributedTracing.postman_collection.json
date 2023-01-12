@@ -1,0 +1,201 @@
+{
+	"info": {
+		"_postman_id": "40b0abe7-10b1-439b-b4c0-b4e7f27fd750",
+		"name": "DistributedTracing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Orders.Api",
+			"item": [
+				{
+					"name": "AddOrder",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userId\": \"00000000-0000-0000-0000-000000000001\",\r\n    \"productId\": \"00000000-0000-0000-0000-000000000001\",\r\n    \"quantity\": 2\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_URL_ORDERS}}/orders",
+							"host": [
+								"{{API_URL_ORDERS}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetOrder",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL_ORDERS}}/orders/00000000-0000-0000-0000-000000000001",
+							"host": [
+								"{{API_URL_ORDERS}}"
+							],
+							"path": [
+								"orders",
+								"00000000-0000-0000-0000-000000000001"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetOrders",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL_ORDERS}}/orders",
+							"host": [
+								"{{API_URL_ORDERS}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users.Api",
+			"item": [
+				{
+					"name": "GetUser",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL_USERS}}/users/00000000-0000-0000-0000-000000000001",
+							"host": [
+								"{{API_URL_USERS}}"
+							],
+							"path": [
+								"users",
+								"00000000-0000-0000-0000-000000000001"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetUsers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL_USERS}}/users",
+							"host": [
+								"{{API_URL_USERS}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AddUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"Michael\",\r\n    \"lastName\": \"Gruber\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_URL_USERS}}/users",
+							"host": [
+								"{{API_URL_USERS}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Inventory.Api",
+			"item": [
+				{
+					"name": "GetInventory",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL_INVENTORY}}/inventory/00000000-0000-0000-0000-000000000001",
+							"host": [
+								"{{API_URL_INVENTORY}}"
+							],
+							"path": [
+								"inventory",
+								"00000000-0000-0000-0000-000000000001"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "API_URL_ORDERS",
+			"value": "http://localhost:9001",
+			"type": "default"
+		},
+		{
+			"key": "API_URL_USERS",
+			"value": "http://localhost:9002",
+			"type": "default"
+		},
+		{
+			"key": "API_URL_INVENTORY",
+			"value": "http://localhost:9003",
+			"type": "default"
+		}
+	]
+}

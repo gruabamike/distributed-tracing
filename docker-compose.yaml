@@ -68,7 +68,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - BROKER_URI=activemq:tcp://active-mq:61616
       - ORDER_PROCESSING_QUEUE_NAME=OrderProcessing
-      - NOTIFICATION_PROCESSING_QUEUE_NAME=NotificationProcessing
+      - NOTIFICATION_PROCESSING_TOPIC_NAME=NotificationProcessing
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
     depends_on:
@@ -78,18 +78,39 @@ services:
       - api-users
       - api-inventory
 
-  svc-notification:
-    container_name: svc-notification
+  svc-mail-notification:
+    container_name: svc-mail-notification
     build:
       context: ./src
-      dockerfile: Services/Notification/Dockerfile
+      dockerfile: Services/MailNotification/Dockerfile
     ports:
       - "9005:80"
       - "9105:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - BROKER_URI=activemq:tcp://active-mq:61616
-      - NOTIFICATION_PROCESSING_QUEUE_NAME=NotificationProcessing
+      - NOTIFICATION_PROCESSING_TOPIC_NAME=NotificationProcessing
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+    depends_on:
+      - otel-collector
+      - active-mq
+      - api-orders
+      - api-users
+      - api-inventory
+
+  svc-phone-notification:
+    container_name: svc-phone-notification
+    build:
+      context: ./src
+      dockerfile: Services/PhoneNotification/Dockerfile
+    ports:
+      - "9006:80"
+      - "9106:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - BROKER_URI=activemq:tcp://active-mq:61616
+      - NOTIFICATION_PROCESSING_TOPIC_NAME=NotificationProcessing
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
     depends_on:

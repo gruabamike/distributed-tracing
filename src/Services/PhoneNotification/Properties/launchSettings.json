@@ -3,20 +3,19 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "https://localhost:9104;http://localhost:9004",
-      "sslPort": 44365
+      "applicationUrl": "https://localhost:9105;http://localhost:9005",
+      "sslPort": 44324
     }
   },
   "profiles": {
-    "Fulfillment": {
+    "PhoneNotification": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:9104;http://localhost:9004",
+      "applicationUrl": "https://localhost:9105;http://localhost:9005",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "BROKER_URI": "activemq:tcp://localhost:61616",
-        "ORDER_PROCESSING_QUEUE_NAME": "OrderProcessing",
         "NOTIFICATION_PROCESSING_TOPIC_NAME": "NotificationProcessing",
         "OTEL_COLLECTOR_URI": "http://localhost:4318"
       }
@@ -24,11 +23,10 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:9104;http://localhost:9004",
+      "applicationUrl": "https://localhost:9105;http://localhost:9005",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "BROKER_URI": "activemq:tcp://localhost:61616",
-        "ORDER_PROCESSING_QUEUE_NAME": "OrderProcessing",
         "NOTIFICATION_PROCESSING_TOPIC_NAME": "NotificationProcessing",
         "OTEL_COLLECTOR_URI": "http://localhost:4318"
       }

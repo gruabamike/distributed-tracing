@@ -4,6 +4,7 @@ using Orders.Api.Commands;
 using Orders.Api.Data;
 using Orders.Api.Models;
 using Orders.Api.Provider;
+using System.Diagnostics;
 
 namespace Orders.Api.Services;
 
@@ -73,7 +74,9 @@ public class OrderService : IOrderService
     private async Task<bool> IsInventoryAvailable(Guid productId, int quantity)
     {
         var httpClient = httpClientFactory.CreateClient("Inventory");
-        var httpResponseMessage = await httpClient.GetAsync($"inventory/{productId}");//await httpClient.PostAsJsonAsync($"inventory/{productId}", new { ProductId = productId, Quantity = quantity });
+        var httpResponseMessage = await httpClient.GetAsync($"inventory/{productId}");
+        // TODO: make a post request and check for inventory
+        // await httpClient.PostAsJsonAsync($"inventory/{productId}", new { ProductId = productId, Quantity = quantity });
 
         return httpResponseMessage.IsSuccessStatusCode;
     }
