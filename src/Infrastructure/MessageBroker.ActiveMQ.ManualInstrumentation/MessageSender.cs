@@ -4,7 +4,7 @@ using Apache.NMS.ActiveMQ;
 
 namespace MessageBroker.ActiveMQ.ManualInstrumentation;
 
-public class MessageSender : Contract.IMessageSender
+public class MessageSender // TODO: Contract.IMessageSender
 {
     private readonly IActiveMQContextPropagationHandler contextPropagationHandler;
     private readonly string queueName;

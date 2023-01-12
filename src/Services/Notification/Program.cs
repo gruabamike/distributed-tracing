@@ -50,17 +50,8 @@ internal class Program
             new Uri(Environment.GetEnvironmentVariable(BROKER_URI_ENVIRONMENT_VARIABLE_NAME)!),
             Environment.GetEnvironmentVariable(NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME)!);
 
-        using IMessageReceiver messageReceiver = new MessageReceiver(
-            brokerUri,
-            notificationProcessingQueueName,
-            async (IMessage message) =>
-            {
-                using (var activity = ActivitySource.StartActivity("Sending mail notification"))
-                {
-                    INotificationManager notificationManager = new NotificationManager();
-                    await notificationManager.Notify(new NotificationMessage(message.Content, message.Content));
-                }
-            });
+        using ActiveMQConnection activeMQConnection = new ActiveMQConnection(brokerUri, ServiceName);
+
 
         var app = builder.Build();
 
@@ -75,8 +66,20 @@ internal class Program
                     return sleepDuration;
                 });
 
-        await retryPolicy.ExecuteAsync(() => messageReceiver.StartReceiveAsync());
+        await retryPolicy.ExecuteAsync(() => activeMQConnection.OpenAsync());
         logger.LogInformation("successfully connected to message broker");
+
+        using IMessageReceiver messageReceiver = new MessageReceiver(activeMQConnection);
+        await messageReceiver.StartReceiveQueueAsync(
+            notificationProcessingQueueName,
+            async (IMessage message) =>
+            {
+                using (var activity = ActivitySource.StartActivity("Sending mail notification"))
+                {
+                    INotificationManager notificationManager = new NotificationManager();
+                    await notificationManager.Notify(new NotificationMessage(message.Content, message.Content));
+                }
+            });
 
         app.Run();
     }

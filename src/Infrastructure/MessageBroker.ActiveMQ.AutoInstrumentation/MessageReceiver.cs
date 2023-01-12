@@ -1,75 +1,63 @@
-﻿using Apache.NMS.ActiveMQ;
-using Apache.NMS;
+﻿using Apache.NMS;
+using Apache.NMS.Util;
+using MessageBroker.Contract;
 
 namespace MessageBroker.ActiveMQ.AutoInstrumentation;
 
-public class MessageReceiver : Contract.IMessageReceiver, IDisposable
+public class MessageReceiver : IMessageReceiver, IDisposable
 {
     private static readonly ActiveMQDiagnosticListener diagnosticListener = new(ActiveMQDiagnosticListenerExtensions.DiagnosticListenerName);
 
-    private readonly string queueName;
-    private readonly Func<Contract.IMessage, Task> messageHandler;
+    private readonly IActiveMQConnection activeMQConnection;
 
-    private readonly IConnectionFactory connectionFactory;
-    private IConnection? connection;
     private ISession? session;
     private IDestination? destination;
     private IMessageConsumer? messageConsumer;
+    private Func<Contract.IMessage, Task>? messageHandler;
+    private bool disposed = false;
 
-    public MessageReceiver(Uri brokerUri,
-        string queueName,
-        Func<Contract.IMessage, Task> messageHandler)
+    public MessageReceiver(IActiveMQConnection activeMQConnection)
     {
-        if (string.IsNullOrWhiteSpace(queueName))
-        {
-            throw new ArgumentException($"'{nameof(queueName)}' cannot be null or whitespace.", nameof(queueName));
-        }
-
-        connectionFactory = new ConnectionFactory(brokerUri);
-        this.queueName = queueName;
-        this.messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
+        this.activeMQConnection = activeMQConnection ?? throw new ArgumentNullException(nameof(activeMQConnection));
     }
 
-    public async Task StartReceiveAsync()
+    public Task StartReceiveQueueAsync(string queueName, Func<Contract.IMessage, Task> messageHandler)
+        => StartReceiveAsync($"queue://{queueName}", messageHandler);
+
+    public Task StartReceiveTopicAsync(string topicName, Func<Contract.IMessage, Task> messageHandler)
+        => StartReceiveAsync($"topic://{topicName}", messageHandler);
+
+    private async Task StartReceiveAsync(string destinationName, Func<Contract.IMessage, Task> messageHandler)
     {
-        Exception? exception = default;
-
-        try
+        if (string.IsNullOrWhiteSpace(destinationName))
         {
-            connection = await connectionFactory.CreateConnectionAsync();
-            diagnosticListener.WriteConnectionStartBefore(connectionFactory, connection);
-            await connection.StartAsync();
-            diagnosticListener.WriteConnectionStartAfter(connectionFactory, connection);
-        }
-        catch (Exception e)
-        {
-            exception = e;
-            throw;
-        }
-        finally
-        {
-            if (exception is not null)
-            {
-                diagnosticListener.WriteConnectionStartError(connectionFactory, connection, exception);
-            }
+            throw new ArgumentException($"'{nameof(destinationName)}' cannot be null or whitespace.", nameof(destinationName));
         }
 
-        session = await connection.CreateSessionAsync(AcknowledgementMode.AutoAcknowledge);
-        destination = await session.GetQueueAsync(queueName);
+        this.messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
 
+        IConnection? connection = activeMQConnection.Connection;
+        bool isConnectionEstablished = connection?.IsStarted ?? false;
+        if (!isConnectionEstablished)
+        {
+            throw new NMSConnectionException("Connection has not been initialized");
+        }
+
+        session = await connection!.CreateSessionAsync(AcknowledgementMode.AutoAcknowledge);
+        destination = SessionUtil.GetDestination(session, destinationName);
         messageConsumer = await session.CreateConsumerAsync(destination);
         messageConsumer.Listener += OnMessageReceived;
     }
 
-    private async void OnMessageReceived(IMessage message)
+    private async void OnMessageReceived(Apache.NMS.IMessage message)
     {
         Exception? exception = default;
 
         try
         {
-            diagnosticListener.WriteMessageReceiveBefore(null, null, message); // TODO
-            await messageHandler(new Contract.TextMessage(message?.ToString() ?? string.Empty));
-            diagnosticListener.WriteMessageReceiveAfter(null, null, message); // TODO
+            diagnosticListener.WriteMessageReceiveBefore(activeMQConnection.ConnectionFactory, activeMQConnection.Connection, message);
+            await messageHandler!(new Contract.TextMessage(message.ToString()!));
+            diagnosticListener.WriteMessageReceiveAfter(activeMQConnection.ConnectionFactory, activeMQConnection.Connection, message);
         }
         catch(Exception e)
         {
@@ -80,16 +68,39 @@ public class MessageReceiver : Contract.IMessageReceiver, IDisposable
         {
             if (exception is not null)
             {
-                diagnosticListener.WriteMessageReceiveError(null, null, message, exception); // TODO
+                diagnosticListener.WriteMessageReceiveError(activeMQConnection.ConnectionFactory, activeMQConnection.Connection, message, exception);
             }
         }
     }
 
     public void Dispose()
     {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!this.disposed)
+        {
+            if (disposing)
+            {
+                DisposeManagedResources();
+            }
+
+            disposed = true;
+        }
+    }
+
+    private void DisposeManagedResources()
+    {
         messageConsumer?.Dispose();
         destination?.Dispose();
         session?.Dispose();
-        connection?.Dispose();
+    }
+
+    ~MessageReceiver()
+    {
+        Dispose(disposing: false);
     }
 }

@@ -2,5 +2,7 @@
 
 public interface IMessageSender
 {
-    Task SendAsync(IMessage message);
+    Task SendQueueAsync(string queueName, Contract.IMessage message);
+
+    Task SendTopicAsync(string topicName, Contract.IMessage message);
 }

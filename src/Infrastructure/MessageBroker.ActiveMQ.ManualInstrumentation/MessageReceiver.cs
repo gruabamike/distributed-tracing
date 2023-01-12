@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace MessageBroker.ActiveMQ.ManualInstrumentation;
 
-public class MessageReceiver : Contract.IMessageReceiver, IDisposable
+public class MessageReceiver : IDisposable // TODO: Contract.IMessageReceiver
 {
     private readonly IActiveMQContextPropagationHandler contextPropagationHandler;
     private readonly string queueName;

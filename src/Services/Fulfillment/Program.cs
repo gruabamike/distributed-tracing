@@ -52,7 +52,10 @@ internal class Program
             Environment.GetEnvironmentVariable(ORDER_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME)!,
             Environment.GetEnvironmentVariable(NOTIFICATION_QUEUE_NAME_ENVIRONMENT_VARIABLE_NAME)!);
 
-        using IMessageReceiver messageReceiver = new MessageReceiver(
+        using ActiveMQConnection activeMQConnection = new ActiveMQConnection(brokerUri, ServiceName);
+        //using IMessageReceiver messageReceiver = new MessageReceiver(brokerUri, ServiceName);
+
+        /*
             brokerUri,
             orderProcessingQueueName,
             async (IMessage message) =>
@@ -65,13 +68,13 @@ internal class Program
 
                 using (var activity = ActivitySource.StartActivity("Send notification"))
                 {
-                    IMessageSender messageSender = new MessageSender(
+                    IMessageSender messageSender = new MessageSenderBase(
                         brokerUri,
                         notificationProcessingQueueName);
                     await messageSender.SendAsync(new TextMessage(message.Content));
                 }
             });
-
+        */
         var app = builder.Build();
 
         var retryPolicy = Policy
@@ -85,8 +88,26 @@ internal class Program
                     return sleepDuration;
                 });
 
-        await retryPolicy.ExecuteAsync(() => messageReceiver.StartReceiveAsync());
+        await retryPolicy.ExecuteAsync(() => activeMQConnection.OpenAsync());
         logger.LogInformation("successfully connected to message broker");
+
+        using IMessageReceiver messageReceiver = new MessageReceiver(activeMQConnection);
+        await messageReceiver.StartReceiveQueueAsync(
+            orderProcessingQueueName,
+            async (IMessage message) =>
+            {
+                using (var activity = ActivitySource.StartActivity("Do fulfillment"))
+                {
+                    IFulfillmentManager fulfillmentManager = new FulfillmentManager();
+                    await fulfillmentManager.Fulfill();
+                }
+
+                using (var activity = ActivitySource.StartActivity("Send notification"))
+                {
+                    IMessageSender messageSender = new MessageSender(activeMQConnection);
+                    await messageSender.SendQueueAsync(notificationProcessingQueueName, new TextMessage(message.Content));
+                }
+            });
 
         app.Run();
     }

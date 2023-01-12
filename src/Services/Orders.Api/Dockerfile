@@ -3,6 +3,7 @@ WORKDIR /src
 
 COPY ./Infrastructure ./Infrastructure
 COPY ./Services/Orders.Api ./Services/Orders.Api
+COPY ./nuget.config .
 
 WORKDIR /src/Services/Orders.Api/
 

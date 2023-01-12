@@ -1,7 +1,6 @@
 using DistributedTracingDotNet.Services.Users.Api.Data;
 using DistributedTracingDotNet.Services.Users.Api.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;

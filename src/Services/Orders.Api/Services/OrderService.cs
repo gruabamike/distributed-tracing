@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Orders.Api.Commands;
 using Orders.Api.Data;
 using Orders.Api.Models;
+using Orders.Api.Provider;
 
 namespace Orders.Api.Services;
 
@@ -11,17 +12,20 @@ public class OrderService : IOrderService
     private readonly ILogger<OrderService> logger;
     private readonly IHttpClientFactory httpClientFactory;
     private readonly IMessageSender messageSender;
+    private readonly IQueueNameProvider queueNameProvider;
     private readonly DataContext context;
 
     public OrderService(
         ILogger<OrderService> logger,
         IHttpClientFactory httpClientFactory,
         IMessageSender messageSender,
+        IQueueNameProvider queueNameProvider,
         DataContext context)
     {
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         this.httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         this.messageSender = messageSender ?? throw new ArgumentNullException(nameof(messageSender));
+        this.queueNameProvider = queueNameProvider ?? throw new ArgumentNullException(nameof(queueNameProvider));
         this.context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
@@ -53,7 +57,7 @@ public class OrderService : IOrderService
         await context.SaveChangesAsync();
         logger.LogInformation($"Order has been successfully created.");
 
-        await messageSender.SendAsync(new TextMessage(order.Id.ToString()));
+        await messageSender.SendQueueAsync(queueNameProvider.OrderProcessingQueueName, new TextMessage(order.Id.ToString()));
 
         return await context.Orders.FindAsync(order.Id);
     }

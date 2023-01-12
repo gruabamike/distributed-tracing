@@ -38,7 +38,6 @@ internal class Program
                 .SetResourceBuilder(GetResourceBuilder())
                 .AddHttpClientInstrumentation()
                 .AddAspNetCoreInstrumentation()
-            //.AddSqlClientInstrumentation()
             )
             .StartWithHost();
 
