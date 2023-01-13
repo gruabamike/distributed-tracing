@@ -1,32 +1,37 @@
 ﻿using System.Diagnostics;
 using Apache.NMS;
-using Apache.NMS.ActiveMQ;
+using Apache.NMS.Util;
 
 namespace MessageBroker.ActiveMQ.ManualInstrumentation;
 
-public class MessageSender // TODO: Contract.IMessageSender
+public class MessageSender : Contract.IMessageSender
 {
+    private readonly IActiveMQConnection activeMQConnection;
     private readonly IActiveMQContextPropagationHandler contextPropagationHandler;
-    private readonly string queueName;
-    private readonly IConnectionFactory connectionFactory;
 
     public MessageSender(
-        IActiveMQContextPropagationHandler contextPropagationHandler,
-        Uri brokerUri,
-        string queueName)
+        IActiveMQConnection activeMQConnection,
+        IActiveMQContextPropagationHandler contextPropagationHandler)
     {
+        this.activeMQConnection = activeMQConnection ?? throw new ArgumentNullException(nameof(activeMQConnection));
         this.contextPropagationHandler = contextPropagationHandler ?? throw new ArgumentNullException(nameof(contextPropagationHandler));
-        if (string.IsNullOrWhiteSpace(queueName))
-        {
-            throw new ArgumentException($"'{nameof(queueName)}' cannot be null or whitespace.", nameof(queueName));
-        }
-
-        this.queueName = queueName;
-        this.connectionFactory = new ConnectionFactory(brokerUri);
     }
 
-    public async Task SendAsync(Contract.IMessage message)
+    public Task SendQueueAsync(string queueName, Contract.IMessage message)
+        => SendAsync($"queue://{queueName}", message);
+
+    public Task SendTopicAsync(string topicName, Contract.IMessage message)
+        => SendAsync($"topic://{topicName}", message);
+
+    private async Task SendAsync(string destinationName, Contract.IMessage message)
     {
+        IConnection? connection = activeMQConnection.Connection;
+        bool isConnectionEstablished = connection?.IsStarted ?? false;
+        if (!isConnectionEstablished)
+        {
+            throw new NMSConnectionException("Connection has not been initialized and started");
+        }
+
         using var activity = ActiveMQSourceInfoProvider.ActivitySource.StartActivity(
             name: ActiveMQSourceInfoProvider.SendMessageActivityName,
             kind: ActivityKind.Producer,
@@ -42,22 +47,25 @@ public class MessageSender // TODO: Contract.IMessageSender
             contextToInject = Activity.Current.Context;
         }
 
-        using IConnection connection = await connectionFactory.CreateConnectionAsync();
-        await connection.StartAsync();
-        using ISession session = await connection.CreateSessionAsync(AcknowledgementMode.AutoAcknowledge);
-        using IDestination destination = await session.GetQueueAsync(queueName);
+        using ISession session = await connection!.CreateSessionAsync(AcknowledgementMode.AutoAcknowledge);
+        using IDestination destination = SessionUtil.GetDestination(session, destinationName);
 
         using IMessageProducer producer = await session.CreateProducerAsync(destination);
         producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
         ITextMessage sendMessage = await session.CreateTextMessageAsync(message.Content);
         sendMessage.NMSCorrelationID = message.Id.ToString();
+        sendMessage.NMSCorrelationID = message.CorrelationId.ToString();
+        sendMessage.NMSDestination = destination;
 
         contextPropagationHandler.Inject(contextToInject, sendMessage);
-        ActiveMQActivityTagHelper.AddMessageBrokerTags(
-            activity: activity,
-            messageSystem: ActiveMQSourceInfoProvider.ApacheActiveMQSystemName,
-            destinationKind: "queue",
-            destination: queueName);
+
+        if (activity is not null)
+        {
+            ActiveMQActivityTagHelper.SetMessagingActivityDetails(
+                activity,
+                activeMQConnection.ConnectionFactory,
+                sendMessage);
+        }
 
         await producer.SendAsync(sendMessage);
     }
