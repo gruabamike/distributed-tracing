@@ -1,7 +1,6 @@
 using MessageBroker.ActiveMQ.AutoInstrumentation;
 using MessageBroker.Contract;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
@@ -12,7 +11,6 @@ using Orders.Api.Data;
 using Orders.Api.Provider;
 using Orders.Api.Services;
 using Polly;
-using System.Diagnostics;
 using System.Net.Mime;
 using System.Reflection;
 
@@ -100,6 +98,13 @@ internal class Program
         builder.Services.AddRouting(option => option.LowercaseUrls = true);
         var app = builder.Build();
 
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            var context = services.GetRequiredService<DataContext>();
+            ApplyMigrations(context);
+        }
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -134,4 +139,11 @@ internal class Program
             serviceName: ServiceName,
             serviceNamespace: ServiceName,
             serviceVersion: ServiceVersion);
+    private static void ApplyMigrations(DataContext context)
+    {
+        if (context.Database.GetPendingMigrations().Any())
+        {
+            context.Database.Migrate();
+        }
+    }
 }

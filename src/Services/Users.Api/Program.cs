@@ -80,6 +80,13 @@ internal class Program
         builder.Services.AddRouting(option => option.LowercaseUrls = true);
         var app = builder.Build();
 
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            var context = services.GetRequiredService<DataContext>();
+            ApplyMigrations(context);
+        }
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -100,4 +107,12 @@ internal class Program
             serviceName: ServiceName,
             serviceNamespace: ServiceName,
             serviceVersion: ServiceVersion);
+
+    private static void ApplyMigrations(DataContext context)
+    {
+        if (context.Database.GetPendingMigrations().Any())
+        {
+            context.Database.Migrate();
+        }
+    }
 }
