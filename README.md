@@ -69,7 +69,7 @@ Content-Length: 136
 
 ## Services
 * BaGet: http://localhost:5555
-* ActiveMQ: http://localhost:8161 (user and password: admin)
+* ActiveMQ: http://localhost:8161
 * Zipkin: http://localhost:9411/zipkin
 * Prometheus: http://localhost:9090
 * Jaeger: http://localhost:16686
