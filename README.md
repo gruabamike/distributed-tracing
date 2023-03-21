@@ -8,6 +8,12 @@ This repository covers an exemplary implementation of distributed tracing in a m
 ## Context Propagation
 ![Alt context propagation](./docs/images/context_propagation.svg)
 
+## Trace
+![Alt Trace](./docs/images/jaeger_trace.png)
+
+## Span (Semantic Conventions)
+![Alt Span](./docs/images/jaeger_span.png)
+
 ## Setup & Deployment
 This chapter describes the setup and deployment process in order to run the prototype using automatic instrumentation of ActiveMQ.
 
